@@ -16,3 +16,6 @@ web-build/
 
 # Temporary files created by Metro to check the health of the file watcher
 .metro-health-check*
+web-build/
+assets/generate-favicon.js
+assets/favicon.svg

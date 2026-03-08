@@ -1,7 +1,23 @@
-import * as AppleAuthentication from 'expo-apple-authentication';
+import { Platform } from 'react-native';
 import { saveToStorage } from './storage';
 
+let AppleAuthentication = null;
+if (Platform.OS !== 'web') {
+  AppleAuthentication = require('expo-apple-authentication');
+}
+
 export const signInWithApple = async () => {
+  if (Platform.OS === 'web') {
+    // Web: use demo/guest login
+    const user = {
+      id: 'web-guest-' + Date.now(),
+      email: null,
+      fullName: { givenName: 'Guest', familyName: 'Golfer' },
+    };
+    await saveToStorage('USER', user);
+    return user;
+  }
+
   try {
     const credential = await AppleAuthentication.signInAsync({
       requestedScopes: [
@@ -10,7 +26,6 @@ export const signInWithApple = async () => {
       ],
     });
 
-    // Create user object
     const user = {
       id: credential.user,
       email: credential.email,
@@ -19,9 +34,7 @@ export const signInWithApple = async () => {
       authorizationCode: credential.authorizationCode,
     };
 
-    // Save to storage
     await saveToStorage('USER', user);
-
     return user;
   } catch (error) {
     if (error.code === 'ERR_CANCELED') {
@@ -44,5 +57,6 @@ export const signOut = async () => {
 };
 
 export const isAppleAuthAvailable = async () => {
+  if (Platform.OS === 'web') return false;
   return await AppleAuthentication.isAvailableAsync();
 };

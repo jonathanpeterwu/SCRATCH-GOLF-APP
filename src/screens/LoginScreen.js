@@ -6,10 +6,15 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import { signInWithApple, isAppleAuthAvailable } from '../services/auth';
 import { useAppStore } from '../store/appStore';
+
+let AppleAuthentication = null;
+if (Platform.OS !== 'web') {
+  AppleAuthentication = require('expo-apple-authentication');
+}
 
 export default function LoginScreen() {
   const [isAvailable, setIsAvailable] = useState(false);
@@ -25,14 +30,18 @@ export default function LoginScreen() {
     setIsAvailable(available);
   };
 
-  const handleAppleSignIn = async () => {
+  const handleSignIn = async () => {
     try {
       setIsLoading(true);
       const user = await signInWithApple();
       setUser(user);
     } catch (error) {
       if (error.code !== 'ERR_CANCELED') {
-        Alert.alert('Sign In Error', 'Failed to sign in with Apple. Please try again.');
+        if (Platform.OS === 'web') {
+          alert('Failed to sign in. Please try again.');
+        } else {
+          Alert.alert('Sign In Error', 'Failed to sign in with Apple. Please try again.');
+        }
       }
     } finally {
       setIsLoading(false);
@@ -58,34 +67,40 @@ export default function LoginScreen() {
         </View>
 
         {/* Sign In Button */}
-        {isAvailable ? (
+        {isAvailable && AppleAuthentication ? (
           <AppleAuthentication.AppleAuthenticationButton
             buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
             buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
             cornerRadius={8}
             style={styles.appleButton}
-            onPress={handleAppleSignIn}
+            onPress={handleSignIn}
           />
         ) : (
           <TouchableOpacity
             style={styles.fallbackButton}
-            onPress={handleAppleSignIn}
+            onPress={handleSignIn}
             disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <>
-                <Text style={styles.appleIcon}>🍎</Text>
-                <Text style={styles.buttonText}>Sign in with Apple</Text>
+                <Text style={styles.buttonIcon}>
+                  {Platform.OS === 'web' ? '🏌️' : '🍎'}
+                </Text>
+                <Text style={styles.buttonText}>
+                  {Platform.OS === 'web' ? 'Get Started' : 'Sign in with Apple'}
+                </Text>
               </>
             )}
           </TouchableOpacity>
         )}
 
         <Text style={styles.privacy}>
-          Your data is private and secure.{'\n'}
-          Synced with iCloud for seamless access.
+          {Platform.OS === 'web'
+            ? 'Data saved locally in your browser.\nInstall on iOS for iCloud sync and Apple Sign In.'
+            : 'Your data is private and secure.\nSynced with iCloud for seamless access.'
+          }
         </Text>
       </View>
     </View>
@@ -110,6 +125,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
+    maxWidth: 480,
+    alignSelf: 'center',
+    width: '100%',
   },
   iconContainer: {
     alignItems: 'center',
@@ -152,14 +170,14 @@ const styles = StyleSheet.create({
   },
   fallbackButton: {
     height: 50,
-    backgroundColor: '#000',
+    backgroundColor: '#2e7d32',
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
-  appleIcon: {
+  buttonIcon: {
     fontSize: 20,
     marginRight: 8,
   },
