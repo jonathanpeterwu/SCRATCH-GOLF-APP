@@ -22,13 +22,38 @@ const CLUB_TYPES = {
   PUTTER: 'putter',
 };
 
+const CLUB_TYPE_OPTIONS = [
+  { key: CLUB_TYPES.DRIVER, label: 'Driver', emoji: '🏌️', description: 'Your longest club off the tee' },
+  { key: CLUB_TYPES.WOOD, label: 'Fairway Wood', emoji: '🌲', description: '3-wood, 5-wood, etc.' },
+  { key: CLUB_TYPES.HYBRID, label: 'Hybrid', emoji: '⚡', description: 'Long iron replacement' },
+  { key: CLUB_TYPES.IRON, label: 'Iron', emoji: '🔨', description: '3-9 irons' },
+  { key: CLUB_TYPES.WEDGE, label: 'Wedge', emoji: '🎯', description: 'PW, GW, SW, LW' },
+  { key: CLUB_TYPES.PUTTER, label: 'Putter', emoji: '⛳', description: 'Your flat stick' },
+];
+
 export default function GolfBagScreen() {
   const { golfBag, addClub, removeClub } = useAppStore();
-  const [modalVisible, setModalVisible] = useState(false);
+  const [typeSelectVisible, setTypeSelectVisible] = useState(false);
+  const [formVisible, setFormVisible] = useState(false);
   const [clubForm, setClubForm] = useState({
     type: CLUB_TYPES.DRIVER, brand: '', model: '', number: '', loft: '',
   });
   const t = useTheme();
+
+  const openAddClub = (type = null) => {
+    if (type) {
+      setClubForm({ type, brand: '', model: '', number: '', loft: '' });
+      setFormVisible(true);
+    } else {
+      setTypeSelectVisible(true);
+    }
+  };
+
+  const selectClubType = (type) => {
+    setClubForm({ type, brand: '', model: '', number: '', loft: '' });
+    setTypeSelectVisible(false);
+    setFormVisible(true);
+  };
 
   const handleAddClub = async () => {
     if (!clubForm.brand || !clubForm.model) {
@@ -45,7 +70,7 @@ export default function GolfBagScreen() {
     const updatedBag = useAppStore.getState().golfBag;
     await saveToStorage('GOLF_BAG', updatedBag);
     setClubForm({ type: CLUB_TYPES.DRIVER, brand: '', model: '', number: '', loft: '' });
-    setModalVisible(false);
+    setFormVisible(false);
   };
 
   const handleRemoveClub = async (type, index) => {
@@ -83,32 +108,73 @@ export default function GolfBagScreen() {
 
         <ClubSection title="Driver" clubs={golfBag.driver ? [golfBag.driver] : []}
           onRemove={() => handleRemoveClub(CLUB_TYPES.DRIVER, 0)}
-          onAdd={() => { setClubForm({ ...clubForm, type: CLUB_TYPES.DRIVER }); setModalVisible(true); }}
+          onAdd={() => openAddClub(CLUB_TYPES.DRIVER)}
           singleClub theme={t} />
         <ClubSection title="Fairway Woods" clubs={golfBag.woods || []}
           onRemove={(i) => handleRemoveClub(CLUB_TYPES.WOOD, i)}
-          onAdd={() => { setClubForm({ ...clubForm, type: CLUB_TYPES.WOOD }); setModalVisible(true); }}
+          onAdd={() => openAddClub(CLUB_TYPES.WOOD)}
           theme={t} />
         <ClubSection title="Hybrids" clubs={golfBag.hybrids || []}
           onRemove={(i) => handleRemoveClub(CLUB_TYPES.HYBRID, i)}
-          onAdd={() => { setClubForm({ ...clubForm, type: CLUB_TYPES.HYBRID }); setModalVisible(true); }}
+          onAdd={() => openAddClub(CLUB_TYPES.HYBRID)}
           theme={t} />
         <ClubSection title="Irons" clubs={golfBag.irons || []}
           onRemove={(i) => handleRemoveClub(CLUB_TYPES.IRON, i)}
-          onAdd={() => { setClubForm({ ...clubForm, type: CLUB_TYPES.IRON }); setModalVisible(true); }}
+          onAdd={() => openAddClub(CLUB_TYPES.IRON)}
           theme={t} />
         <ClubSection title="Wedges" clubs={golfBag.wedges || []}
           onRemove={(i) => handleRemoveClub(CLUB_TYPES.WEDGE, i)}
-          onAdd={() => { setClubForm({ ...clubForm, type: CLUB_TYPES.WEDGE }); setModalVisible(true); }}
+          onAdd={() => openAddClub(CLUB_TYPES.WEDGE)}
           theme={t} />
         <ClubSection title="Putter" clubs={golfBag.putter ? [golfBag.putter] : []}
           onRemove={() => handleRemoveClub(CLUB_TYPES.PUTTER, 0)}
-          onAdd={() => { setClubForm({ ...clubForm, type: CLUB_TYPES.PUTTER }); setModalVisible(true); }}
+          onAdd={() => openAddClub(CLUB_TYPES.PUTTER)}
           singleClub theme={t} />
       </ScrollView>
 
-      <Modal visible={modalVisible} animationType="slide" transparent
-        onRequestClose={() => setModalVisible(false)}>
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: t.primary }]}
+        onPress={() => openAddClub()}>
+        <Text style={styles.fabIcon}>+</Text>
+      </TouchableOpacity>
+
+      {/* Club Type Selection Modal */}
+      <Modal visible={typeSelectVisible} animationType="slide" transparent
+        onRequestClose={() => setTypeSelectVisible(false)}>
+        <View style={[styles.modalOverlay, { backgroundColor: t.modalOverlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: t.modalBackground }]}>
+            <Text style={[styles.modalTitle, { color: t.text }]}>Select Club Type</Text>
+            <Text style={[styles.modalSubtitle, { color: t.textSecondary }]}>
+              What type of club do you want to add?
+            </Text>
+
+            {CLUB_TYPE_OPTIONS.map(({ key, label, emoji, description }) => (
+              <TouchableOpacity
+                key={key}
+                style={[styles.typeOption, { backgroundColor: t.surface, borderColor: t.border }]}
+                onPress={() => selectClubType(key)}>
+                <Text style={styles.typeEmoji}>{emoji}</Text>
+                <View style={styles.typeInfo}>
+                  <Text style={[styles.typeLabel, { color: t.text }]}>{label}</Text>
+                  <Text style={[styles.typeDescription, { color: t.textSecondary }]}>{description}</Text>
+                </View>
+                <Text style={[styles.typeChevron, { color: t.textTertiary }]}>›</Text>
+              </TouchableOpacity>
+            ))}
+
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: t.cancelButton, marginTop: 8 }]}
+              onPress={() => setTypeSelectVisible(false)}>
+              <Text style={[styles.buttonText, { color: t.cancelButtonText }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Club Details Form Modal */}
+      <Modal visible={formVisible} animationType="slide" transparent
+        onRequestClose={() => setFormVisible(false)}>
         <View style={[styles.modalOverlay, { backgroundColor: t.modalOverlay }]}>
           <View style={[styles.modalContent, { backgroundColor: t.modalBackground }]}>
             <Text style={[styles.modalTitle, { color: t.text }]}>
@@ -141,7 +207,7 @@ export default function GolfBagScreen() {
 
             <View style={styles.modalButtons}>
               <TouchableOpacity style={[styles.button, { backgroundColor: t.cancelButton }]}
-                onPress={() => setModalVisible(false)}>
+                onPress={() => setFormVisible(false)}>
                 <Text style={[styles.buttonText, { color: t.cancelButtonText }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.button, { backgroundColor: t.primary }]}
@@ -209,9 +275,39 @@ const styles = StyleSheet.create({
   clubName: { fontSize: 16, fontWeight: '500', marginBottom: 4 },
   clubDetails: { fontSize: 14 },
   removeBtn: { fontSize: 24, padding: 8 },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  fabIcon: { color: '#fff', fontSize: 32, fontWeight: '300' },
   modalOverlay: { flex: 1, justifyContent: 'center', padding: 20 },
-  modalContent: { borderRadius: 12, padding: 24 },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 20 },
+  modalContent: { borderRadius: 12, padding: 24, maxHeight: '80%' },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 4 },
+  modalSubtitle: { fontSize: 14, marginBottom: 20 },
+  typeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  typeEmoji: { fontSize: 32, marginRight: 12 },
+  typeInfo: { flex: 1 },
+  typeLabel: { fontSize: 16, fontWeight: '600', marginBottom: 2 },
+  typeDescription: { fontSize: 13 },
+  typeChevron: { fontSize: 28, marginLeft: 8 },
   input: { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 16, marginBottom: 12 },
   modalButtons: { flexDirection: 'row', marginTop: 12, gap: 12 },
   button: { flex: 1, padding: 14, borderRadius: 8, alignItems: 'center' },
