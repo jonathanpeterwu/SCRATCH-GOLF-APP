@@ -5,10 +5,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
-  ScrollView,
   Alert,
 } from 'react-native';
-import { GiftedChat, Bubble, InputToolbar } from 'react-native-gifted-chat';
+import { GiftedChat, Bubble, InputToolbar, Composer, Send } from 'react-native-gifted-chat';
 import { useAppStore } from '../store/appStore';
 import { saveToStorage } from '../services/storage';
 import aiChat from '../services/aiChat';
@@ -17,6 +16,7 @@ import {
   getModeInfo,
   getStarterQuestions,
 } from '../services/prompts';
+import { useTheme } from '../theme';
 
 export default function ChatScreen() {
   const { user, golfBag, ghinData, chatHistory, addMessage, clearChat } = useAppStore();
@@ -24,28 +24,19 @@ export default function ChatScreen() {
   const [isTyping, setIsTyping] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [currentMode, setCurrentMode] = useState(COACHING_MODES.GENERAL);
+  const t = useTheme();
 
   useEffect(() => {
-    // Load chat history
     if (chatHistory && chatHistory.length > 0) {
       setMessages(chatHistory);
     } else {
-      // Show welcome message
-      setMessages([
-        {
-          _id: 1,
-          text: getWelcomeMessage(),
-          createdAt: new Date(),
-          user: {
-            _id: 2,
-            name: 'Golf Coach',
-            avatar: '⛳',
-          },
-        },
-      ]);
+      setMessages([{
+        _id: 1,
+        text: getWelcomeMessage(),
+        createdAt: new Date(),
+        user: { _id: 2, name: 'Golf Coach', avatar: '⛳' },
+      }]);
     }
-
-    // Set user data in AI service
     aiChat.setUserData(user, golfBag, ghinData);
   }, []);
 
@@ -75,57 +66,37 @@ What would you like to work on today?`;
       _id: Math.random().toString(),
       text: `Switched to ${modeInfo.emoji} ${modeInfo.name}\n\n${modeInfo.description}`,
       createdAt: new Date(),
-      user: {
-        _id: 2,
-        name: 'Golf Coach',
-        avatar: '⛳',
-      },
+      user: { _id: 2, name: 'Golf Coach', avatar: '⛳' },
     };
 
-    setMessages(previousMessages => GiftedChat.append(previousMessages, [message]));
+    setMessages(prev => GiftedChat.append(prev, [message]));
     addMessage(message);
   };
 
   const onSend = useCallback(async (newMessages = []) => {
     const userMessage = newMessages[0];
-
-    // Add user message
-    setMessages(previousMessages => GiftedChat.append(previousMessages, newMessages));
+    setMessages(prev => GiftedChat.append(prev, newMessages));
     addMessage(userMessage);
-
-    // Show typing indicator
     setIsTyping(true);
 
     try {
-      // Get AI response
       let responseText;
       try {
         responseText = await aiChat.generateResponse(userMessage.text);
       } catch (error) {
-        // Fallback to mock response if AI fails
         console.warn('AI API failed, using mock response:', error.message);
         responseText = aiChat.getMockResponse(userMessage.text);
       }
 
-      // Create assistant message
       const assistantMessage = {
         _id: Math.random().toString(),
         text: responseText,
         createdAt: new Date(),
-        user: {
-          _id: 2,
-          name: 'Golf Coach',
-          avatar: '⛳',
-        },
+        user: { _id: 2, name: 'Golf Coach', avatar: '⛳' },
       };
 
-      // Add assistant message
-      setMessages(previousMessages =>
-        GiftedChat.append(previousMessages, [assistantMessage])
-      );
+      setMessages(prev => GiftedChat.append(prev, [assistantMessage]));
       addMessage(assistantMessage);
-
-      // Save to storage
       await saveToStorage('CHAT_HISTORY', useAppStore.getState().chatHistory);
     } catch (error) {
       console.error('Error getting AI response:', error);
@@ -136,46 +107,31 @@ What would you like to work on today?`;
   }, []);
 
   const handleStarterQuestion = (question) => {
-    const message = {
+    onSend([{
       _id: Math.random().toString(),
       text: question,
       createdAt: new Date(),
-      user: {
-        _id: 1,
-        name: user?.fullName?.givenName || 'You',
-      },
-    };
-    onSend([message]);
+      user: { _id: 1, name: user?.fullName?.givenName || 'You' },
+    }]);
   };
 
   const handleClearChat = () => {
-    Alert.alert(
-      'Clear Chat',
-      'Are you sure you want to clear the chat history?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: async () => {
-            clearChat();
-            await saveToStorage('CHAT_HISTORY', []);
-            setMessages([
-              {
-                _id: 1,
-                text: getWelcomeMessage(),
-                createdAt: new Date(),
-                user: {
-                  _id: 2,
-                  name: 'Golf Coach',
-                  avatar: '⛳',
-                },
-              },
-            ]);
-          },
+    Alert.alert('Clear Chat', 'Are you sure you want to clear the chat history?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear', style: 'destructive',
+        onPress: async () => {
+          clearChat();
+          await saveToStorage('CHAT_HISTORY', []);
+          setMessages([{
+            _id: 1,
+            text: getWelcomeMessage(),
+            createdAt: new Date(),
+            user: { _id: 2, name: 'Golf Coach', avatar: '⛳' },
+          }]);
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const renderBubble = (props) => {
@@ -184,40 +140,42 @@ What would you like to work on today?`;
       <Bubble
         {...props}
         wrapperStyle={{
-          right: {
-            backgroundColor: modeInfo.color,
-          },
-          left: {
-            backgroundColor: '#f0f0f0',
-          },
+          right: { backgroundColor: modeInfo.color },
+          left: { backgroundColor: t.bubbleLeft },
         }}
         textStyle={{
-          right: {
-            color: '#fff',
-          },
-          left: {
-            color: '#333',
-          },
+          right: { color: t.bubbleRightText },
+          left: { color: t.bubbleLeftText },
         }}
       />
     );
   };
 
-  const renderInputToolbar = (props) => {
-    return (
-      <InputToolbar
-        {...props}
-        containerStyle={styles.inputToolbar}
-        primaryStyle={{ alignItems: 'center' }}
-      />
-    );
-  };
+  const renderInputToolbar = (props) => (
+    <InputToolbar
+      {...props}
+      containerStyle={[styles.inputToolbar, { borderTopColor: t.border, backgroundColor: t.surface }]}
+      primaryStyle={{ alignItems: 'center' }}
+    />
+  );
+
+  const renderComposer = (props) => (
+    <Composer
+      {...props}
+      textInputStyle={{ color: t.text }}
+      placeholderTextColor={t.placeholder}
+    />
+  );
+
+  const renderSend = (props) => (
+    <Send {...props} textStyle={{ color: t.primary }} />
+  );
 
   const modeInfo = getModeInfo(currentMode);
   const starterQuestions = getStarterQuestions(currentMode);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: t.chatBackground }]}>
       {/* Mode Header */}
       <View style={[styles.modeHeader, { backgroundColor: modeInfo.color }]}>
         <View style={styles.modeInfo}>
@@ -227,25 +185,20 @@ What would you like to work on today?`;
             <Text style={styles.modeDescription}>{modeInfo.description}</Text>
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.modeButton}
-          onPress={() => setModalVisible(true)}
-        >
+        <TouchableOpacity style={styles.modeButton} onPress={() => setModalVisible(true)}>
           <Text style={styles.modeButtonText}>Change Mode</Text>
         </TouchableOpacity>
       </View>
 
       {/* Starter Questions */}
       {messages.length <= 1 && (
-        <View style={styles.starterQuestions}>
-          <Text style={styles.starterTitle}>Try asking:</Text>
+        <View style={[styles.starterQuestions, { backgroundColor: t.surfaceAlt, borderBottomColor: t.border }]}>
+          <Text style={[styles.starterTitle, { color: t.textSecondary }]}>Try asking:</Text>
           {starterQuestions.map((question, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.starterButton}
-              onPress={() => handleStarterQuestion(question)}
-            >
-              <Text style={styles.starterButtonText}>{question}</Text>
+            <TouchableOpacity key={index}
+              style={[styles.starterButton, { backgroundColor: t.surface, borderColor: t.border }]}
+              onPress={() => handleStarterQuestion(question)}>
+              <Text style={[styles.starterButtonText, { color: t.text }]}>{question}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -254,61 +207,47 @@ What would you like to work on today?`;
       {/* Chat */}
       <GiftedChat
         messages={messages}
-        onSend={messages => onSend(messages)}
-        user={{
-          _id: 1,
-          name: user?.fullName?.givenName || 'You',
-        }}
+        onSend={msgs => onSend(msgs)}
+        user={{ _id: 1, name: user?.fullName?.givenName || 'You' }}
         renderBubble={renderBubble}
         renderInputToolbar={renderInputToolbar}
+        renderComposer={renderComposer}
+        renderSend={renderSend}
         isTyping={isTyping}
         placeholder="Ask your golf coach..."
         alwaysShowSend
         scrollToBottom
       />
 
-      {/* Clear Chat Button */}
+      {/* Clear Chat */}
       {messages.length > 1 && (
-        <TouchableOpacity
-          style={styles.clearButton}
-          onPress={handleClearChat}
-        >
-          <Text style={styles.clearButtonText}>Clear Chat</Text>
+        <TouchableOpacity style={[styles.clearButton, { borderTopColor: t.border, backgroundColor: t.surface }]}
+          onPress={handleClearChat}>
+          <Text style={[styles.clearButtonText, { color: t.dangerText }]}>Clear Chat</Text>
         </TouchableOpacity>
       )}
 
       {/* Mode Selection Modal */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Coaching Mode</Text>
+      <Modal visible={modalVisible} animationType="slide" transparent
+        onRequestClose={() => setModalVisible(false)}>
+        <View style={[styles.modalOverlay, { backgroundColor: t.modalOverlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: t.modalBackground }]}>
+            <Text style={[styles.modalTitle, { color: t.text }]}>Select Coaching Mode</Text>
 
             {Object.values(COACHING_MODES).map(mode => {
               const info = getModeInfo(mode);
               const isActive = mode === currentMode;
-
               return (
-                <TouchableOpacity
-                  key={mode}
-                  style={[
-                    styles.modeOption,
-                    { borderColor: info.color },
-                    isActive && { backgroundColor: info.color + '20' },
-                  ]}
-                  onPress={() => handleModeChange(mode)}
-                >
+                <TouchableOpacity key={mode}
+                  style={[styles.modeOption, { borderColor: info.color },
+                    isActive && { backgroundColor: info.color + '20' }]}
+                  onPress={() => handleModeChange(mode)}>
                   <Text style={styles.modeOptionEmoji}>{info.emoji}</Text>
                   <View style={styles.modeOptionInfo}>
-                    <Text style={styles.modeOptionName}>
-                      {info.name}
-                      {isActive && ' ✓'}
+                    <Text style={[styles.modeOptionName, { color: t.text }]}>
+                      {info.name}{isActive && ' ✓'}
                     </Text>
-                    <Text style={styles.modeOptionDescription}>
+                    <Text style={[styles.modeOptionDesc, { color: t.textSecondary }]}>
                       {info.description}
                     </Text>
                   </View>
@@ -316,11 +255,9 @@ What would you like to work on today?`;
               );
             })}
 
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.modalCloseButtonText}>Cancel</Text>
+            <TouchableOpacity style={[styles.modalCloseButton, { backgroundColor: t.cancelButton }]}
+              onPress={() => setModalVisible(false)}>
+              <Text style={[styles.modalCloseText, { color: t.cancelButtonText }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -330,140 +267,29 @@ What would you like to work on today?`;
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  modeHeader: {
-    padding: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  modeInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  modeEmoji: {
-    fontSize: 32,
-    marginRight: 12,
-  },
-  modeName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 2,
-  },
-  modeDescription: {
-    fontSize: 12,
-    color: '#fff',
-    opacity: 0.9,
-  },
-  modeButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  modeButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  starterQuestions: {
-    backgroundColor: '#f9f9f9',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  starterTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 12,
-  },
-  starterButton: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  starterButtonText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  inputToolbar: {
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    backgroundColor: '#fff',
-  },
-  clearButton: {
-    padding: 12,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  clearButtonText: {
-    color: '#d32f2f',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
-    maxHeight: '80%',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
-  },
-  modeOption: {
-    flexDirection: 'row',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  modeOptionEmoji: {
-    fontSize: 32,
-    marginRight: 12,
-  },
-  modeOptionInfo: {
-    flex: 1,
-  },
-  modeOptionName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  modeOptionDescription: {
-    fontSize: 13,
-    color: '#666',
-  },
-  modalCloseButton: {
-    marginTop: 8,
-    padding: 14,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  modalCloseButtonText: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '600',
-  },
+  container: { flex: 1 },
+  modeHeader: { padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  modeInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  modeEmoji: { fontSize: 32, marginRight: 12 },
+  modeName: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginBottom: 2 },
+  modeDescription: { fontSize: 12, color: '#fff', opacity: 0.9 },
+  modeButton: { backgroundColor: 'rgba(255,255,255,0.3)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6 },
+  modeButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  starterQuestions: { padding: 16, borderBottomWidth: 1 },
+  starterTitle: { fontSize: 14, fontWeight: '600', marginBottom: 12 },
+  starterButton: { padding: 12, borderRadius: 8, marginBottom: 8, borderWidth: 1 },
+  starterButtonText: { fontSize: 14 },
+  inputToolbar: { borderTopWidth: 1 },
+  clearButton: { padding: 12, alignItems: 'center', borderTopWidth: 1 },
+  clearButtonText: { fontSize: 14, fontWeight: '600' },
+  modalOverlay: { flex: 1, justifyContent: 'center', padding: 20 },
+  modalContent: { borderRadius: 12, padding: 24, maxHeight: '80%' },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 20 },
+  modeOption: { flexDirection: 'row', padding: 16, borderRadius: 12, borderWidth: 2, marginBottom: 12, alignItems: 'center' },
+  modeOptionEmoji: { fontSize: 32, marginRight: 12 },
+  modeOptionInfo: { flex: 1 },
+  modeOptionName: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
+  modeOptionDesc: { fontSize: 13 },
+  modalCloseButton: { marginTop: 8, padding: 14, borderRadius: 8, alignItems: 'center' },
+  modalCloseText: { fontSize: 16, fontWeight: '600' },
 });

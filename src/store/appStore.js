@@ -38,6 +38,11 @@ export const useAppStore = create((set) => ({
   ghinData: null,
   setGhinData: (ghinData) => set({ ghinData }),
 
+  // Theme
+  isDarkMode: false,
+  toggleTheme: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
+  setDarkMode: (isDark) => set({ isDarkMode: isDark }),
+
   // Chat history
   chatHistory: [],
   addMessage: (message) => set((state) => ({
