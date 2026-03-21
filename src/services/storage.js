@@ -1,14 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
+// iCloud storage - future feature
+// For now, using AsyncStorage for all platforms
 let CloudStorage = null;
-if (Platform.OS !== 'web') {
-  try {
-    CloudStorage = require('expo-cloud-storage');
-  } catch (e) {
-    console.warn('expo-cloud-storage not available');
-  }
-}
 
 const STORAGE_KEYS = {
   USER: '@golf_coach_user',
