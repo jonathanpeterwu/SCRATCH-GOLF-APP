@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppStore } from '../store/appStore';
 import { saveToStorage } from '../services/storage';
 import {
@@ -17,7 +18,7 @@ import {
   calculateVarianceAnalysis,
   calculateStrokesGained,
 } from '../services/ghin';
-import { useTheme } from '../theme';
+import { useTheme, shadows, typography, spacing } from '../theme';
 
 export default function StatsScreen() {
   const { ghinData, setGhinData } = useAppStore();
@@ -95,11 +96,11 @@ export default function StatsScreen() {
     if (!sg) return null;
 
     const categories = [
-      { key: 'offTee', label: 'Off-the-Tee', emoji: '🏌️' },
-      { key: 'approach', label: 'Approach', emoji: '🎯' },
-      { key: 'aroundGreen', label: 'Around Green', emoji: '⛳' },
-      { key: 'putting', label: 'Putting', emoji: '⛳' },
-      { key: 'teeToGreen', label: 'Tee-to-Green', emoji: '🏌️' },
+      { key: 'offTee', label: 'Off-the-Tee', icon: 'golf-tee', iconColor: '#E53935' },
+      { key: 'approach', label: 'Approach', icon: 'target', iconColor: '#2196F3' },
+      { key: 'aroundGreen', label: 'Around Green', icon: 'golf', iconColor: '#4CAF50' },
+      { key: 'putting', label: 'Putting', icon: 'golf', iconColor: '#9C27B0' },
+      { key: 'teeToGreen', label: 'Tee-to-Green', icon: 'golf-tee', iconColor: '#FF9800' },
     ];
 
     return (
@@ -109,24 +110,27 @@ export default function StatsScreen() {
           Performance vs. scratch golfer (per round)
         </Text>
 
-        {categories.map(({ key, label, emoji }) => {
+        {categories.map(({ key, label, icon, iconColor }) => {
           const value = parseFloat(sg[key]);
           const isPositive = value > 0;
           const isNeutral = value >= -0.3 && value <= 0.3;
-          const color = isPositive ? '#4caf50' : isNeutral ? '#ed6c02' : '#ef5350';
-          const indicator = isPositive ? '🟢' : isNeutral ? '🟡' : '🔴';
+          const color = isPositive ? t.success : isNeutral ? t.warning : t.error;
 
           return (
-            <View key={key} style={[styles.sgCard, { backgroundColor: t.card }]}>
+            <View key={key} style={[styles.sgCard, { backgroundColor: t.card, borderColor: t.cardBorder }, shadows.small]}>
               <View style={styles.sgHeader}>
-                <Text style={styles.sgEmoji}>{emoji}</Text>
+                <View style={[styles.sgIconCircle, { backgroundColor: iconColor + '20' }]}>
+                  <MaterialCommunityIcons name={icon} size={24} color={iconColor} />
+                </View>
                 <Text style={[styles.sgLabel, { color: t.text }]}>{label}</Text>
               </View>
               <View style={styles.sgValueContainer}>
                 <Text style={[styles.sgValue, { color }]}>
                   {value >= 0 ? '+' : ''}{value.toFixed(2)}
                 </Text>
-                <Text style={styles.sgIndicator}>{indicator}</Text>
+                <View style={[styles.sgIndicatorCircle, { backgroundColor: color + '30' }]}>
+                  <View style={[styles.sgIndicatorDot, { backgroundColor: color }]} />
+                </View>
               </View>
               <Text style={[styles.sgDescription, { color: t.textSecondary }]}>
                 {getSGDescription(key, value)}
@@ -280,14 +284,55 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 20, fontWeight: 'bold', marginBottom: 4 },
   statLabel: { fontSize: 12 },
   varianceDetail: { fontSize: 12, textAlign: 'center' },
-  sgCard: { padding: 16, borderRadius: 12, marginBottom: 12 },
-  sgHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  sgEmoji: { fontSize: 24, marginRight: 12 },
-  sgLabel: { fontSize: 16, fontWeight: '600', flex: 1 },
-  sgValueContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  sgValue: { fontSize: 32, fontWeight: 'bold', marginRight: 8 },
-  sgIndicator: { fontSize: 20 },
-  sgDescription: { fontSize: 13, fontStyle: 'italic' },
+  sgCard: {
+    padding: spacing.md,
+    borderRadius: 12,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+  },
+  sgHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  sgIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.sm,
+  },
+  sgLabel: {
+    ...typography.body,
+    fontWeight: '600',
+    flex: 1,
+  },
+  sgValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  sgValue: {
+    ...typography.h2,
+    marginRight: spacing.sm,
+  },
+  sgIndicatorCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sgIndicatorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  sgDescription: {
+    ...typography.bodySmall,
+    fontStyle: 'italic',
+  },
   roundCard: { padding: 16, borderRadius: 8, marginBottom: 8 },
   roundHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   roundDate: { fontSize: 14, fontWeight: '600' },

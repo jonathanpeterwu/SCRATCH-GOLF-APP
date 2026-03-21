@@ -9,10 +9,11 @@ import {
   ActivityIndicator,
   Switch,
 } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppStore } from '../store/appStore';
 import { signOut } from '../services/auth';
 import { syncToCloud, clearAllStorage } from '../services/storage';
-import { useTheme } from '../theme';
+import { useTheme, shadows, typography, spacing } from '../theme';
 
 export default function ProfileScreen() {
   const { user, golfBag, ghinData, isDarkMode, toggleTheme,
@@ -81,7 +82,7 @@ export default function ProfileScreen() {
       {/* Profile Header */}
       <View style={[styles.header, { backgroundColor: t.surface, borderBottomColor: t.border }]}>
         <View style={[styles.avatarContainer, { backgroundColor: t.primary }]}>
-          <Text style={styles.avatar}>🏌️</Text>
+          <MaterialCommunityIcons name="golf" size={40} color="#fff" />
         </View>
         <Text style={[styles.name, { color: t.text }]}>
           {user?.fullName?.givenName || 'Golfer'} {user?.fullName?.familyName || ''}
@@ -91,17 +92,41 @@ export default function ProfileScreen() {
 
       {/* Stats Overview */}
       <View style={styles.statsContainer}>
-        <StatCard icon="⛳" value={getClubCount()} label="Clubs in Bag" theme={t} />
-        <StatCard icon="📊" value={ghinData?.handicapIndex?.toFixed(1) || '--'} label="Handicap Index" theme={t} />
-        <StatCard icon="🏌️" value={ghinData?.recentScores?.length || 0} label="Rounds Tracked" theme={t} />
+        <StatCard
+          IconComponent={MaterialCommunityIcons}
+          iconName="golf"
+          value={getClubCount()}
+          label="Clubs in Bag"
+          theme={t}
+        />
+        <StatCard
+          IconComponent={Ionicons}
+          iconName="stats-chart"
+          value={ghinData?.handicapIndex?.toFixed(1) || '--'}
+          label="Handicap Index"
+          theme={t}
+        />
+        <StatCard
+          IconComponent={MaterialCommunityIcons}
+          iconName="golf-tee"
+          value={ghinData?.recentScores?.length || 0}
+          label="Rounds Tracked"
+          theme={t}
+        />
       </View>
 
       {/* Appearance */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: t.text }]}>Appearance</Text>
-        <View style={[styles.themeToggle, { backgroundColor: t.card }]}>
+        <View style={[styles.themeToggle, { backgroundColor: t.card, borderColor: t.cardBorder }, shadows.small]}>
           <View style={styles.themeToggleLeft}>
-            <Text style={styles.themeIcon}>{isDarkMode ? '🌙' : '☀️'}</Text>
+            <View style={[styles.themeIconCircle, { backgroundColor: t.primaryLight }]}>
+              <Ionicons
+                name={isDarkMode ? 'moon' : 'sunny'}
+                size={24}
+                color={t.primary}
+              />
+            </View>
             <View>
               <Text style={[styles.themeLabel, { color: t.text }]}>Dark Mode</Text>
               <Text style={[styles.themeSubtitle, { color: t.textSecondary }]}>
@@ -121,37 +146,65 @@ export default function ProfileScreen() {
       {/* iCloud Sync */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: t.text }]}>iCloud Sync</Text>
-        <TouchableOpacity style={[styles.syncButton, { backgroundColor: t.primary }]}
-          onPress={handleSync} disabled={isSyncing}>
+        <TouchableOpacity
+          style={[styles.syncButton, { backgroundColor: t.primary }, shadows.medium]}
+          onPress={handleSync}
+          disabled={isSyncing}
+          activeOpacity={0.8}
+        >
           {isSyncing ? <ActivityIndicator color="#fff" /> : (
             <>
-              <Text style={styles.syncIcon}>☁️</Text>
+              <Ionicons name="cloud-upload-outline" size={24} color="#fff" />
               <Text style={styles.syncButtonText}>Sync to iCloud Now</Text>
             </>
           )}
         </TouchableOpacity>
-        <Text style={[styles.syncInfo, { color: t.textSecondary }]}>
-          ✓ Automatic sync enabled{'\n'}
-          Your golf bag, chat history, and stats are backed up to iCloud
-        </Text>
+        <View style={styles.syncInfoContainer}>
+          <Ionicons name="checkmark-circle" size={16} color={t.success} />
+          <Text style={[styles.syncInfo, { color: t.textSecondary }]}>
+            Automatic sync enabled{'\n'}
+            Your golf bag, chat history, and stats are backed up to iCloud
+          </Text>
+        </View>
       </View>
 
       {/* Settings */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: t.text }]}>Settings</Text>
-        <SettingItem icon="🏌️" title="Golf Bag" subtitle={`${getClubCount()} clubs`} theme={t} onPress={() => {}} />
-        <SettingItem icon="📊" title="GHIN Stats"
-          subtitle={ghinData ? `Index: ${ghinData.handicapIndex}` : 'Not connected'} theme={t} onPress={() => {}} />
-        <SettingItem icon="💬" title="Chat History"
-          subtitle="Saved conversations with your coach" theme={t} onPress={() => {}} />
+        <SettingItem
+          IconComponent={MaterialCommunityIcons}
+          iconName="golf"
+          title="Golf Bag"
+          subtitle={`${getClubCount()} clubs`}
+          theme={t}
+          onPress={() => {}}
+        />
+        <SettingItem
+          IconComponent={Ionicons}
+          iconName="stats-chart-outline"
+          title="GHIN Stats"
+          subtitle={ghinData ? `Index: ${ghinData.handicapIndex}` : 'Not connected'}
+          theme={t}
+          onPress={() => {}}
+        />
+        <SettingItem
+          IconComponent={Ionicons}
+          iconName="chatbubbles-outline"
+          title="Chat History"
+          subtitle="Saved conversations with your coach"
+          theme={t}
+          onPress={() => {}}
+        />
       </View>
 
       {/* About */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: t.text }]}>About</Text>
-        <View style={[styles.aboutCard, { backgroundColor: t.card }]}>
-          <Text style={styles.appIcon}>⛳</Text>
-          <Text style={[styles.appName, { color: t.primary }]}>Golf Coach</Text>
+        <View style={[styles.aboutCard, { backgroundColor: t.card, borderColor: t.cardBorder }, shadows.small]}>
+          <View style={[styles.aboutIconCircle, { backgroundColor: t.primaryLight }]}>
+            <MaterialCommunityIcons name="golf" size={32} color={t.primary} />
+          </View>
+          <Text style={[styles.appName, { color: t.text }]}>Golf Coach</Text>
           <Text style={[styles.version, { color: t.textTertiary }]}>Version 1.0.0</Text>
           <Text style={[styles.aboutText, { color: t.textSecondary }]}>
             Your AI-powered golf assistant with personalized coaching,
@@ -180,67 +233,211 @@ export default function ProfileScreen() {
   );
 }
 
-function StatCard({ icon, value, label, theme: t }) {
+function StatCard({ IconComponent, iconName, value, label, theme: t }) {
   return (
-    <View style={[styles.statCard, { backgroundColor: t.card }]}>
-      <Text style={styles.statIcon}>{icon}</Text>
-      <Text style={[styles.statValue, { color: t.primary }]}>{value}</Text>
+    <View style={[styles.statCard, { backgroundColor: t.card, borderColor: t.cardBorder }, shadows.small]}>
+      <View style={[styles.statIconCircle, { backgroundColor: t.primaryLight }]}>
+        <IconComponent name={iconName} size={24} color={t.primary} />
+      </View>
+      <Text style={[styles.statValue, { color: t.text }]}>{value}</Text>
       <Text style={[styles.statLabel, { color: t.textSecondary }]}>{label}</Text>
     </View>
   );
 }
 
-function SettingItem({ icon, title, subtitle, onPress, theme: t }) {
+function SettingItem({ IconComponent, iconName, title, subtitle, onPress, theme: t }) {
   return (
-    <TouchableOpacity style={[styles.settingItem, { backgroundColor: t.card }]} onPress={onPress}>
-      <Text style={styles.settingIcon}>{icon}</Text>
+    <TouchableOpacity
+      style={[styles.settingItem, { backgroundColor: t.card, borderColor: t.cardBorder }, shadows.small]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={[styles.settingIconCircle, { backgroundColor: t.primaryLight }]}>
+        <IconComponent name={iconName} size={20} color={t.primary} />
+      </View>
       <View style={styles.settingInfo}>
         <Text style={[styles.settingTitle, { color: t.text }]}>{title}</Text>
         <Text style={[styles.settingSubtitle, { color: t.textSecondary }]}>{subtitle}</Text>
       </View>
-      <Text style={[styles.settingChevron, { color: t.textTertiary }]}>›</Text>
+      <Ionicons name="chevron-forward" size={20} color={t.textTertiary} />
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { alignItems: 'center', padding: 32, borderBottomWidth: 1 },
-  avatarContainer: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  avatar: { fontSize: 40 },
-  name: { fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
-  email: { fontSize: 14 },
-  statsContainer: { flexDirection: 'row', padding: 16, gap: 12 },
-  statCard: { flex: 1, padding: 16, borderRadius: 12, alignItems: 'center' },
-  statIcon: { fontSize: 32, marginBottom: 8 },
-  statValue: { fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
-  statLabel: { fontSize: 12, textAlign: 'center' },
-  section: { padding: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
-  themeToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 12 },
+  header: { alignItems: 'center', padding: spacing.xl, borderBottomWidth: 1 },
+  avatarContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  name: {
+    ...typography.h3,
+    marginBottom: spacing.xs,
+  },
+  email: {
+    ...typography.bodySmall,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  statCard: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  statIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  statValue: {
+    ...typography.h4,
+    marginBottom: spacing.xs,
+  },
+  statLabel: {
+    ...typography.caption,
+    textAlign: 'center',
+  },
+  section: { padding: spacing.md },
+  sectionTitle: {
+    ...typography.h5,
+    marginBottom: spacing.md,
+  },
+  themeToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
   themeToggleLeft: { flexDirection: 'row', alignItems: 'center' },
-  themeIcon: { fontSize: 28, marginRight: 12 },
-  themeLabel: { fontSize: 16, fontWeight: '600', marginBottom: 2 },
-  themeSubtitle: { fontSize: 13 },
-  syncButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, borderRadius: 12, marginBottom: 12 },
-  syncIcon: { fontSize: 20, marginRight: 8 },
-  syncButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  syncInfo: { fontSize: 13, lineHeight: 20 },
-  settingItem: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 12, marginBottom: 8 },
-  settingIcon: { fontSize: 24, marginRight: 12 },
+  themeIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  themeLabel: {
+    ...typography.body,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  themeSubtitle: {
+    ...typography.bodySmall,
+  },
+  syncButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.md,
+    borderRadius: 12,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  syncButtonText: {
+    color: '#fff',
+    ...typography.button,
+  },
+  syncInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  syncInfo: {
+    ...typography.bodySmall,
+    lineHeight: 20,
+    flex: 1,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderRadius: 12,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+  },
+  settingIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
   settingInfo: { flex: 1 },
-  settingTitle: { fontSize: 16, fontWeight: '600', marginBottom: 2 },
-  settingSubtitle: { fontSize: 13 },
-  settingChevron: { fontSize: 32 },
-  aboutCard: { padding: 24, borderRadius: 12, alignItems: 'center' },
-  appIcon: { fontSize: 48, marginBottom: 12 },
-  appName: { fontSize: 20, fontWeight: 'bold', marginBottom: 4 },
-  version: { fontSize: 14, marginBottom: 16 },
-  aboutText: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
-  dangerButton: { padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 12, borderWidth: 2 },
-  dangerButtonText: { fontSize: 16, fontWeight: 'bold' },
-  signOutButton: { padding: 16, borderRadius: 12, alignItems: 'center' },
-  signOutButtonText: { fontSize: 16, fontWeight: 'bold' },
-  footer: { padding: 32, alignItems: 'center' },
-  footerText: { fontSize: 12 },
+  settingTitle: {
+    ...typography.body,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  settingSubtitle: {
+    ...typography.bodySmall,
+  },
+  aboutCard: {
+    padding: spacing.lg,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  aboutIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  appName: {
+    ...typography.h5,
+    marginBottom: spacing.xs,
+  },
+  version: {
+    ...typography.bodySmall,
+    marginBottom: spacing.md,
+  },
+  aboutText: {
+    ...typography.bodySmall,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  dangerButton: {
+    padding: spacing.md,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    borderWidth: 2,
+  },
+  dangerButtonText: {
+    ...typography.button,
+  },
+  signOutButton: {
+    padding: spacing.md,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  signOutButtonText: {
+    ...typography.button,
+  },
+  footer: {
+    padding: spacing.xl,
+    alignItems: 'center',
+  },
+  footerText: {
+    ...typography.caption,
+  },
 });

@@ -6,8 +6,10 @@ import {
   TouchableOpacity,
   Modal,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { GiftedChat, Bubble, InputToolbar, Composer, Send } from 'react-native-gifted-chat';
+import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/appStore';
 import { saveToStorage } from '../services/storage';
 import aiChat from '../services/aiChat';
@@ -16,7 +18,7 @@ import {
   getModeInfo,
   getStarterQuestions,
 } from '../services/prompts';
-import { useTheme } from '../theme';
+import { useTheme, shadows, typography, spacing } from '../theme';
 
 export default function ChatScreen() {
   const { user, golfBag, ghinData, chatHistory, addMessage, clearChat } = useAppStore();
@@ -231,32 +233,39 @@ What would you like to work on today?`;
       <Modal visible={modalVisible} animationType="slide" transparent
         onRequestClose={() => setModalVisible(false)}>
         <View style={[styles.modalOverlay, { backgroundColor: t.modalOverlay }]}>
-          <View style={[styles.modalContent, { backgroundColor: t.modalBackground }]}>
+          <View style={[styles.modalContent, { backgroundColor: t.modalBackground }, shadows.large]}>
             <Text style={[styles.modalTitle, { color: t.text }]}>Select Coaching Mode</Text>
 
-            {Object.values(COACHING_MODES).map(mode => {
-              const info = getModeInfo(mode);
-              const isActive = mode === currentMode;
-              return (
-                <TouchableOpacity key={mode}
-                  style={[styles.modeOption, { borderColor: info.color },
-                    isActive && { backgroundColor: info.color + '20' }]}
-                  onPress={() => handleModeChange(mode)}>
-                  <Text style={styles.modeOptionEmoji}>{info.emoji}</Text>
-                  <View style={styles.modeOptionInfo}>
-                    <Text style={[styles.modeOptionName, { color: t.text }]}>
-                      {info.name}{isActive && ' ✓'}
-                    </Text>
-                    <Text style={[styles.modeOptionDesc, { color: t.textSecondary }]}>
-                      {info.description}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+            <ScrollView style={styles.modeOptionsScroll} showsVerticalScrollIndicator={false}>
+              {Object.values(COACHING_MODES).map(mode => {
+                const info = getModeInfo(mode);
+                const isActive = mode === currentMode;
+                return (
+                  <TouchableOpacity key={mode}
+                    style={[styles.modeOption, { borderColor: info.color },
+                      isActive && { backgroundColor: info.color + '20' }]}
+                    onPress={() => handleModeChange(mode)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.modeOptionEmoji}>{info.emoji}</Text>
+                    <View style={styles.modeOptionInfo}>
+                      <Text style={[styles.modeOptionName, { color: t.text }]}>
+                        {info.name}
+                      </Text>
+                      <Text style={[styles.modeOptionDesc, { color: t.textSecondary }]}>
+                        {info.description}
+                      </Text>
+                    </View>
+                    {isActive && <Ionicons name="checkmark-circle" size={24} color={info.color} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
 
-            <TouchableOpacity style={[styles.modalCloseButton, { backgroundColor: t.cancelButton }]}
-              onPress={() => setModalVisible(false)}>
+            <TouchableOpacity
+              style={[styles.modalCloseButton, { backgroundColor: t.cancelButton }]}
+              onPress={() => setModalVisible(false)}
+            >
               <Text style={[styles.modalCloseText, { color: t.cancelButtonText }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -268,28 +277,112 @@ What would you like to work on today?`;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  modeHeader: { padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  modeInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  modeEmoji: { fontSize: 32, marginRight: 12 },
-  modeName: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginBottom: 2 },
-  modeDescription: { fontSize: 12, color: '#fff', opacity: 0.9 },
-  modeButton: { backgroundColor: 'rgba(255,255,255,0.3)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6 },
-  modeButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  starterQuestions: { padding: 16, borderBottomWidth: 1 },
-  starterTitle: { fontSize: 14, fontWeight: '600', marginBottom: 12 },
-  starterButton: { padding: 12, borderRadius: 8, marginBottom: 8, borderWidth: 1 },
-  starterButtonText: { fontSize: 14 },
-  inputToolbar: { borderTopWidth: 1 },
-  clearButton: { padding: 12, alignItems: 'center', borderTopWidth: 1 },
-  clearButtonText: { fontSize: 14, fontWeight: '600' },
-  modalOverlay: { flex: 1, justifyContent: 'center', padding: 20 },
-  modalContent: { borderRadius: 12, padding: 24, maxHeight: '80%' },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 20 },
-  modeOption: { flexDirection: 'row', padding: 16, borderRadius: 12, borderWidth: 2, marginBottom: 12, alignItems: 'center' },
-  modeOptionEmoji: { fontSize: 32, marginRight: 12 },
+  modeHeader: {
+    padding: spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modeInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  modeEmoji: { fontSize: 28, marginRight: spacing.sm },
+  modeName: {
+    ...typography.h5,
+    color: '#fff',
+    marginBottom: 2,
+  },
+  modeDescription: {
+    ...typography.caption,
+    color: '#fff',
+    opacity: 0.95,
+  },
+  modeButton: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+  },
+  modeButtonText: {
+    color: '#fff',
+    ...typography.bodySmall,
+    fontWeight: '600',
+  },
+  starterQuestions: {
+    padding: spacing.md,
+    borderBottomWidth: 1,
+  },
+  starterTitle: {
+    ...typography.bodySmall,
+    fontWeight: '600',
+    marginBottom: spacing.md,
+  },
+  starterButton: {
+    padding: spacing.md,
+    borderRadius: 10,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+  },
+  starterButtonText: {
+    ...typography.bodySmall,
+  },
+  inputToolbar: {
+    borderTopWidth: 1,
+    paddingVertical: spacing.xs,
+  },
+  clearButton: {
+    padding: spacing.md,
+    alignItems: 'center',
+    borderTopWidth: 1,
+  },
+  clearButtonText: {
+    ...typography.bodySmall,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  modalContent: {
+    borderRadius: 16,
+    padding: spacing.lg,
+    maxHeight: '85%',
+  },
+  modalTitle: {
+    ...typography.h4,
+    marginBottom: spacing.lg,
+  },
+  modeOptionsScroll: {
+    maxHeight: 450,
+  },
+  modeOption: {
+    flexDirection: 'row',
+    padding: spacing.md,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginBottom: spacing.md,
+    alignItems: 'center',
+  },
+  modeOptionEmoji: { fontSize: 32, marginRight: spacing.md },
   modeOptionInfo: { flex: 1 },
-  modeOptionName: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
-  modeOptionDesc: { fontSize: 13 },
-  modalCloseButton: { marginTop: 8, padding: 14, borderRadius: 8, alignItems: 'center' },
-  modalCloseText: { fontSize: 16, fontWeight: '600' },
+  modeOptionName: {
+    ...typography.body,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  modeOptionDesc: {
+    ...typography.bodySmall,
+  },
+  modalCloseButton: {
+    marginTop: spacing.sm,
+    padding: spacing.md,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalCloseText: {
+    ...typography.button,
+  },
 });

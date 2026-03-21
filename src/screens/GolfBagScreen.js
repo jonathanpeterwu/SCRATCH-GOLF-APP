@@ -9,9 +9,10 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store/appStore';
 import { saveToStorage } from '../services/storage';
-import { useTheme } from '../theme';
+import { useTheme, shadows, typography, spacing } from '../theme';
 
 const CLUB_TYPES = {
   DRIVER: 'driver',
@@ -23,12 +24,12 @@ const CLUB_TYPES = {
 };
 
 const CLUB_TYPE_OPTIONS = [
-  { key: CLUB_TYPES.DRIVER, label: 'Driver', emoji: '🏌️', description: 'Your longest club off the tee' },
-  { key: CLUB_TYPES.WOOD, label: 'Fairway Wood', emoji: '🌲', description: '3-wood, 5-wood, etc.' },
-  { key: CLUB_TYPES.HYBRID, label: 'Hybrid', emoji: '⚡', description: 'Long iron replacement' },
-  { key: CLUB_TYPES.IRON, label: 'Iron', emoji: '🔨', description: '3-9 irons' },
-  { key: CLUB_TYPES.WEDGE, label: 'Wedge', emoji: '🎯', description: 'PW, GW, SW, LW' },
-  { key: CLUB_TYPES.PUTTER, label: 'Putter', emoji: '⛳', description: 'Your flat stick' },
+  { key: CLUB_TYPES.DRIVER, label: 'Driver', icon: 'golf-tee', description: 'Your longest club off the tee', iconColor: '#E53935' },
+  { key: CLUB_TYPES.WOOD, label: 'Fairway Wood', icon: 'pine-tree', description: '3-wood, 5-wood, etc.', iconColor: '#2D7738' },
+  { key: CLUB_TYPES.HYBRID, label: 'Hybrid', icon: 'flash', description: 'Long iron replacement', iconColor: '#FF9800' },
+  { key: CLUB_TYPES.IRON, label: 'Iron', icon: 'hammer', description: '3-9 irons', iconColor: '#5A6678' },
+  { key: CLUB_TYPES.WEDGE, label: 'Wedge', icon: 'target', description: 'PW, GW, SW, LW', iconColor: '#2196F3' },
+  { key: CLUB_TYPES.PUTTER, label: 'Putter', icon: 'golf', description: 'Your flat stick', iconColor: '#9C27B0' },
 ];
 
 export default function GolfBagScreen() {
@@ -98,74 +99,116 @@ export default function GolfBagScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: t.background }]}>
-      <ScrollView style={styles.scrollView}>
-        <View style={[styles.header, { backgroundColor: t.surface, borderBottomColor: t.border }]}>
-          <Text style={[styles.title, { color: t.primary }]}>My Golf Bag</Text>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.headerContainer}>
           <Text style={[styles.subtitle, { color: t.textSecondary }]}>
             Add your clubs to get personalized coaching
           </Text>
         </View>
 
-        <ClubSection title="Driver" clubs={golfBag.driver ? [golfBag.driver] : []}
-          onRemove={() => handleRemoveClub(CLUB_TYPES.DRIVER, 0)}
-          onAdd={() => openAddClub(CLUB_TYPES.DRIVER)}
-          singleClub theme={t} />
-        <ClubSection title="Fairway Woods" clubs={golfBag.woods || []}
-          onRemove={(i) => handleRemoveClub(CLUB_TYPES.WOOD, i)}
-          onAdd={() => openAddClub(CLUB_TYPES.WOOD)}
-          theme={t} />
-        <ClubSection title="Hybrids" clubs={golfBag.hybrids || []}
-          onRemove={(i) => handleRemoveClub(CLUB_TYPES.HYBRID, i)}
-          onAdd={() => openAddClub(CLUB_TYPES.HYBRID)}
-          theme={t} />
-        <ClubSection title="Irons" clubs={golfBag.irons || []}
-          onRemove={(i) => handleRemoveClub(CLUB_TYPES.IRON, i)}
-          onAdd={() => openAddClub(CLUB_TYPES.IRON)}
-          theme={t} />
-        <ClubSection title="Wedges" clubs={golfBag.wedges || []}
-          onRemove={(i) => handleRemoveClub(CLUB_TYPES.WEDGE, i)}
-          onAdd={() => openAddClub(CLUB_TYPES.WEDGE)}
-          theme={t} />
-        <ClubSection title="Putter" clubs={golfBag.putter ? [golfBag.putter] : []}
-          onRemove={() => handleRemoveClub(CLUB_TYPES.PUTTER, 0)}
-          onAdd={() => openAddClub(CLUB_TYPES.PUTTER)}
-          singleClub theme={t} />
+        <View style={styles.sectionsContainer}>
+          <ClubSection
+            title="Driver"
+            icon="golf-tee"
+            iconColor="#E53935"
+            clubs={golfBag.driver ? [golfBag.driver] : []}
+            onRemove={() => handleRemoveClub(CLUB_TYPES.DRIVER, 0)}
+            onAdd={() => openAddClub(CLUB_TYPES.DRIVER)}
+            singleClub
+            theme={t}
+          />
+          <ClubSection
+            title="Fairway Woods"
+            icon="pine-tree"
+            iconColor="#2D7738"
+            clubs={golfBag.woods || []}
+            onRemove={(i) => handleRemoveClub(CLUB_TYPES.WOOD, i)}
+            onAdd={() => openAddClub(CLUB_TYPES.WOOD)}
+            theme={t}
+          />
+          <ClubSection
+            title="Hybrids"
+            icon="flash"
+            iconColor="#FF9800"
+            clubs={golfBag.hybrids || []}
+            onRemove={(i) => handleRemoveClub(CLUB_TYPES.HYBRID, i)}
+            onAdd={() => openAddClub(CLUB_TYPES.HYBRID)}
+            theme={t}
+          />
+          <ClubSection
+            title="Irons"
+            icon="hammer"
+            iconColor="#5A6678"
+            clubs={golfBag.irons || []}
+            onRemove={(i) => handleRemoveClub(CLUB_TYPES.IRON, i)}
+            onAdd={() => openAddClub(CLUB_TYPES.IRON)}
+            theme={t}
+          />
+          <ClubSection
+            title="Wedges"
+            icon="target"
+            iconColor="#2196F3"
+            clubs={golfBag.wedges || []}
+            onRemove={(i) => handleRemoveClub(CLUB_TYPES.WEDGE, i)}
+            onAdd={() => openAddClub(CLUB_TYPES.WEDGE)}
+            theme={t}
+          />
+          <ClubSection
+            title="Putter"
+            icon="golf"
+            iconColor="#9C27B0"
+            clubs={golfBag.putter ? [golfBag.putter] : []}
+            onRemove={() => handleRemoveClub(CLUB_TYPES.PUTTER, 0)}
+            onAdd={() => openAddClub(CLUB_TYPES.PUTTER)}
+            singleClub
+            theme={t}
+          />
+        </View>
       </ScrollView>
 
       {/* Floating Action Button */}
       <TouchableOpacity
-        style={[styles.fab, { backgroundColor: t.primary }]}
-        onPress={() => openAddClub()}>
-        <Text style={styles.fabIcon}>+</Text>
+        style={[styles.fab, { backgroundColor: t.primary }, shadows.large]}
+        onPress={() => openAddClub()}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
 
       {/* Club Type Selection Modal */}
       <Modal visible={typeSelectVisible} animationType="slide" transparent
         onRequestClose={() => setTypeSelectVisible(false)}>
         <View style={[styles.modalOverlay, { backgroundColor: t.modalOverlay }]}>
-          <View style={[styles.modalContent, { backgroundColor: t.modalBackground }]}>
+          <View style={[styles.modalContent, { backgroundColor: t.modalBackground }, shadows.large]}>
             <Text style={[styles.modalTitle, { color: t.text }]}>Select Club Type</Text>
             <Text style={[styles.modalSubtitle, { color: t.textSecondary }]}>
               What type of club do you want to add?
             </Text>
 
-            {CLUB_TYPE_OPTIONS.map(({ key, label, emoji, description }) => (
-              <TouchableOpacity
-                key={key}
-                style={[styles.typeOption, { backgroundColor: t.surface, borderColor: t.border }]}
-                onPress={() => selectClubType(key)}>
-                <Text style={styles.typeEmoji}>{emoji}</Text>
-                <View style={styles.typeInfo}>
-                  <Text style={[styles.typeLabel, { color: t.text }]}>{label}</Text>
-                  <Text style={[styles.typeDescription, { color: t.textSecondary }]}>{description}</Text>
-                </View>
-                <Text style={[styles.typeChevron, { color: t.textTertiary }]}>›</Text>
-              </TouchableOpacity>
-            ))}
+            <ScrollView style={styles.typeOptionsScroll} showsVerticalScrollIndicator={false}>
+              {CLUB_TYPE_OPTIONS.map(({ key, label, icon, description, iconColor }) => (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.typeOption, { backgroundColor: t.card, borderColor: t.cardBorder }, shadows.small]}
+                  onPress={() => selectClubType(key)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.typeIconCircle, { backgroundColor: iconColor + '20' }]}>
+                    <MaterialCommunityIcons name={icon} size={28} color={iconColor} />
+                  </View>
+                  <View style={styles.typeInfo}>
+                    <Text style={[styles.typeLabel, { color: t.text }]}>{label}</Text>
+                    <Text style={[styles.typeDescription, { color: t.textSecondary }]}>{description}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={t.textTertiary} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
 
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: t.cancelButton, marginTop: 8 }]}
-              onPress={() => setTypeSelectVisible(false)}>
+              style={[styles.button, { backgroundColor: t.cancelButton, marginTop: spacing.md }]}
+              onPress={() => setTypeSelectVisible(false)}
+            >
               <Text style={[styles.buttonText, { color: t.cancelButtonText }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -222,34 +265,56 @@ export default function GolfBagScreen() {
   );
 }
 
-function ClubSection({ title, clubs, onRemove, onAdd, singleClub, theme: t }) {
+function ClubSection({ title, icon, iconColor, clubs, onRemove, onAdd, singleClub, theme: t }) {
   return (
-    <View style={[styles.section, { backgroundColor: t.surface }]}>
+    <View style={[styles.section, { backgroundColor: t.card, borderColor: t.cardBorder }, shadows.small]}>
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: t.text }]}>{title}</Text>
+        <View style={styles.sectionTitleContainer}>
+          <View style={[styles.sectionIconCircle, { backgroundColor: iconColor + '20' }]}>
+            <MaterialCommunityIcons name={icon} size={20} color={iconColor} />
+          </View>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>{title}</Text>
+        </View>
         {(!singleClub || clubs.length === 0) && (
-          <TouchableOpacity onPress={onAdd} style={[styles.addIcon, { backgroundColor: t.primary }]}>
-            <Text style={styles.addIconText}>+</Text>
+          <TouchableOpacity
+            onPress={onAdd}
+            style={[styles.addButton, { backgroundColor: t.primaryLight }]}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add" size={20} color={t.primary} />
           </TouchableOpacity>
         )}
       </View>
       {clubs.length === 0 ? (
-        <Text style={[styles.emptyText, { color: t.textTertiary }]}>No clubs added</Text>
+        <View style={styles.emptyContainer}>
+          <Text style={[styles.emptyText, { color: t.textTertiary }]}>No clubs added</Text>
+        </View>
       ) : (
         clubs.map((club, index) => (
-          <View key={index} style={[styles.clubItem, { borderBottomColor: t.borderLight }]}>
+          <View
+            key={index}
+            style={[
+              styles.clubItem,
+              { borderTopColor: t.borderLight },
+              index === 0 && { borderTopWidth: 1 }
+            ]}
+          >
             <View style={styles.clubInfo}>
               <Text style={[styles.clubName, { color: t.text }]}>
                 {club.number ? `${club.number} - ` : ''}{club.brand} {club.model}
               </Text>
               {club.loft && (
                 <Text style={[styles.clubDetails, { color: t.textSecondary }]}>
-                  {club.loft}° {club.type ? `(${club.type})` : ''}
+                  {club.loft}° {club.type ? `• ${club.type}` : ''}
                 </Text>
               )}
             </View>
-            <TouchableOpacity onPress={() => onRemove(index)}>
-              <Text style={[styles.removeBtn, { color: t.dangerText }]}>✕</Text>
+            <TouchableOpacity
+              onPress={() => onRemove(index)}
+              style={styles.removeButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close-circle" size={24} color={t.dangerText} />
             </TouchableOpacity>
           </View>
         ))
@@ -261,55 +326,152 @@ function ClubSection({ title, clubs, onRemove, onAdd, singleClub, theme: t }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
-  header: { padding: 20, borderBottomWidth: 1 },
-  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 4 },
-  subtitle: { fontSize: 14 },
-  section: { marginTop: 12, padding: 16 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionTitle: { fontSize: 18, fontWeight: '600' },
-  addIcon: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  addIconText: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
-  emptyText: { fontStyle: 'italic' },
-  clubItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1 },
+  headerContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  subtitle: {
+    ...typography.bodySmall,
+  },
+  sectionsContainer: {
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  section: {
+    borderRadius: 12,
+    padding: spacing.md,
+    borderWidth: 1,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  sectionIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    ...typography.h5,
+  },
+  addButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  emptyText: {
+    ...typography.bodySmall,
+    fontStyle: 'italic',
+  },
+  clubItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
   clubInfo: { flex: 1 },
-  clubName: { fontSize: 16, fontWeight: '500', marginBottom: 4 },
-  clubDetails: { fontSize: 14 },
-  removeBtn: { fontSize: 24, padding: 8 },
+  clubName: {
+    ...typography.body,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  clubDetails: {
+    ...typography.bodySmall,
+  },
+  removeButton: {
+    padding: spacing.xs,
+  },
   fab: {
     position: 'absolute',
-    right: 20,
-    bottom: 20,
+    right: spacing.lg,
+    bottom: spacing.lg,
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
   },
-  fabIcon: { color: '#fff', fontSize: 32, fontWeight: '300' },
-  modalOverlay: { flex: 1, justifyContent: 'center', padding: 20 },
-  modalContent: { borderRadius: 12, padding: 24, maxHeight: '80%' },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 4 },
-  modalSubtitle: { fontSize: 14, marginBottom: 20 },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  modalContent: {
+    borderRadius: 16,
+    padding: spacing.lg,
+    maxHeight: '85%',
+  },
+  modalTitle: {
+    ...typography.h4,
+    marginBottom: spacing.xs,
+  },
+  modalSubtitle: {
+    ...typography.bodySmall,
+    marginBottom: spacing.lg,
+  },
+  typeOptionsScroll: {
+    maxHeight: 400,
+  },
   typeOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: spacing.md,
     borderRadius: 12,
-    marginBottom: 12,
+    marginBottom: spacing.sm,
     borderWidth: 1,
   },
-  typeEmoji: { fontSize: 32, marginRight: 12 },
+  typeIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
   typeInfo: { flex: 1 },
-  typeLabel: { fontSize: 16, fontWeight: '600', marginBottom: 2 },
-  typeDescription: { fontSize: 13 },
-  typeChevron: { fontSize: 28, marginLeft: 8 },
-  input: { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 16, marginBottom: 12 },
-  modalButtons: { flexDirection: 'row', marginTop: 12, gap: 12 },
-  button: { flex: 1, padding: 14, borderRadius: 8, alignItems: 'center' },
-  buttonText: { fontSize: 16, fontWeight: '600' },
+  typeLabel: {
+    ...typography.body,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  typeDescription: {
+    ...typography.bodySmall,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: spacing.md,
+    ...typography.body,
+    marginBottom: spacing.md,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    marginTop: spacing.md,
+    gap: spacing.sm,
+  },
+  button: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  buttonText: {
+    ...typography.button,
+  },
 });

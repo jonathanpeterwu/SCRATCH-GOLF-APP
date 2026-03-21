@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, useColorScheme, StatusBar } from 'react-native';
+import { useColorScheme, StatusBar } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppStore } from './src/store/appStore';
 import { loadFromStorage } from './src/services/storage';
 import { useTheme } from './src/theme';
@@ -75,9 +76,17 @@ export default function App() {
             tabBarStyle: {
               backgroundColor: theme.tabBar,
               borderTopColor: theme.tabBarBorder,
+              borderTopWidth: 1,
+              paddingTop: 8,
+              paddingBottom: 8,
+              height: 60,
             },
             headerStyle: {
               backgroundColor: theme.headerBackground,
+              elevation: 0,
+              shadowOpacity: 0,
+              borderBottomWidth: 1,
+              borderBottomColor: theme.border,
             },
             headerTintColor: theme.headerText,
           }}
@@ -86,28 +95,56 @@ export default function App() {
             name="Bag"
             component={GolfBagScreen}
             options={{
-              tabBarIcon: () => <Text style={{ fontSize: 24 }}>⛳</Text>
+              tabBarIcon: ({ color, size, focused }) => (
+                <MaterialCommunityIcons
+                  name={focused ? "golf" : "golf"}
+                  size={26}
+                  color={color}
+                />
+              ),
+              headerTitle: 'My Golf Bag',
             }}
           />
           <Tab.Screen
             name="Chat"
             component={ChatScreen}
             options={{
-              tabBarIcon: () => <Text style={{ fontSize: 24 }}>💬</Text>
+              tabBarIcon: ({ color, size, focused }) => (
+                <Ionicons
+                  name={focused ? "chatbubbles" : "chatbubbles-outline"}
+                  size={24}
+                  color={color}
+                />
+              ),
+              headerTitle: 'Golf Coach',
             }}
           />
           <Tab.Screen
             name="Stats"
             component={StatsScreen}
             options={{
-              tabBarIcon: () => <Text style={{ fontSize: 24 }}>📊</Text>
+              tabBarIcon: ({ color, size, focused }) => (
+                <Ionicons
+                  name={focused ? "stats-chart" : "stats-chart-outline"}
+                  size={24}
+                  color={color}
+                />
+              ),
+              headerTitle: 'My Stats',
             }}
           />
           <Tab.Screen
             name="Profile"
             component={ProfileScreen}
             options={{
-              tabBarIcon: () => <Text style={{ fontSize: 24 }}>👤</Text>
+              tabBarIcon: ({ color, size, focused }) => (
+                <Ionicons
+                  name={focused ? "person" : "person-outline"}
+                  size={24}
+                  color={color}
+                />
+              ),
+              headerTitle: 'Profile',
             }}
           />
         </Tab.Navigator>
