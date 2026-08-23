@@ -5,10 +5,15 @@ import { useColorScheme, StatusBar } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppStore } from './src/store/appStore';
 import { loadFromStorage } from './src/services/storage';
+import { openDb } from './src/services/db';
+import { getReviews } from './src/services/reviews';
+import { getBookings } from './src/services/teeTimes';
 import { useTheme } from './src/theme';
 
 // Screens
 import LoginScreen from './src/screens/LoginScreen';
+import CoursesScreen from './src/screens/CoursesScreen';
+import TeeTimesScreen from './src/screens/TeeTimesScreen';
 import GolfBagScreen from './src/screens/GolfBagScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import StatsScreen from './src/screens/StatsScreen';
@@ -17,7 +22,7 @@ import ProfileScreen from './src/screens/ProfileScreen';
 const Tab = createBottomTabNavigator();
 
 export default function App() {
-  const { user, isDarkMode, setUser, setGolfBag, setGhinData, setDarkMode } = useAppStore();
+  const { user, isDarkMode, setUser, setGolfBag, setGhinData, setDarkMode, setCourseData } = useAppStore();
   const systemColorScheme = useColorScheme();
   const theme = useTheme();
 
@@ -33,6 +38,25 @@ export default function App() {
       setDarkMode(true);
     }
   }, []);
+
+  // Open the private course database for whoever is signed in and pull their
+  // ratings and bookings into the store.
+  useEffect(() => {
+    if (!user?.id) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        await openDb(user.id);
+        const [reviews, bookings] = await Promise.all([getReviews(user.id), getBookings(user.id)]);
+        if (!cancelled) setCourseData({ reviews, bookings });
+      } catch (error) {
+        console.error('Error opening course database:', error);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   const navigationTheme = isDarkMode ? {
     ...DarkTheme,
@@ -89,8 +113,33 @@ export default function App() {
               borderBottomColor: theme.border,
             },
             headerTintColor: theme.headerText,
+            tabBarLabelStyle: { fontSize: 10 },
           }}
         >
+          <Tab.Screen
+            name="Courses"
+            component={CoursesScreen}
+            options={{
+              tabBarIcon: ({ color }) => (
+                <MaterialCommunityIcons name="golf" size={24} color={color} />
+              ),
+              headerTitle: 'Course Rankings',
+            }}
+          />
+          <Tab.Screen
+            name="Tee Times"
+            component={TeeTimesScreen}
+            options={{
+              tabBarIcon: ({ color, focused }) => (
+                <Ionicons
+                  name={focused ? 'calendar' : 'calendar-outline'}
+                  size={22}
+                  color={color}
+                />
+              ),
+              headerTitle: 'My Tee Times',
+            }}
+          />
           <Tab.Screen
             name="Bag"
             component={GolfBagScreen}

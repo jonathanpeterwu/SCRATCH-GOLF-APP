@@ -38,6 +38,29 @@ export const useAppStore = create((set) => ({
   ghinData: null,
   setGhinData: (ghinData) => set({ ghinData }),
 
+  // Courses: ratings and tee time bookings, mirrored from the private db so
+  // screens can render synchronously. The db stays the source of truth.
+  reviews: [],
+  bookings: [],
+  setCourseData: ({ reviews, bookings }) => set({
+    reviews: reviews ?? [],
+    bookings: bookings ?? [],
+  }),
+  upsertReview: (review) => set((state) => ({
+    reviews: [
+      ...state.reviews.filter((existing) => existing.id !== review.id),
+      review,
+    ],
+  })),
+  removeReview: (reviewId) => set((state) => ({
+    reviews: state.reviews.filter((review) => review.id !== reviewId),
+  })),
+  addBooking: (booking) => set((state) => ({ bookings: [...state.bookings, booking] })),
+  replaceBooking: (booking) => set((state) => ({
+    bookings: state.bookings.map((existing) => (existing.id === booking.id ? booking : existing)),
+  })),
+  clearCourseData: () => set({ reviews: [], bookings: [] }),
+
   // Theme
   isDarkMode: false,
   toggleTheme: () => set((state) => ({ isDarkMode: !state.isDarkMode })),

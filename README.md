@@ -4,6 +4,26 @@ A comprehensive React Native golf coaching app with AI-powered advice, iCloud sy
 
 ## 🎯 Features
 
+### ⛳ Course Rankings
+- Ranked catalog of publicly bookable courses - municipals, daily-fee tracks, and resorts
+- Search by course, city, or architect; filter by course type; sort by ranking, golfer rating, green fee, difficulty, or name
+- Rate a course across five categories (conditions, layout, value, pace, facilities) and leave a review
+- Rankings use a Bayesian (shrunk) average, so one glowing review can't push a course to #1 - but a run of them moves it
+
+### 🗓️ Tee Time Booking
+- Every course publishes a tee sheet: real tee windows, intervals, and per-slot pricing with early-bird and twilight discounts
+- Live availability per slot (out of a foursome), with past times and full groups blocked
+- Book 1-4 players up to 14 days out, add a cart, leave a note for the pro shop, and get a confirmation code
+- Upcoming and past tee times in one place, with cancellation
+
+> **Note:** there is no live booking backend yet. Bookings are written to the private database on the device, and the "other golfers" filling up each sheet are derived deterministically from the course and date - the same slot always shows the same availability. Swapping in a real provider (GolfNow, Supreme Golf, a club's own API) means replacing the two functions in `src/services/teeTimes.js` that produce a sheet and confirm a booking; the screens and the private database stay as they are. Green fees and tee windows in `src/data/courses.js` are approximate - confirm with the course.
+
+### 🔒 Private On-Device Database
+- Ratings, reviews, and bookings live in a private database on the device (`src/services/db.js`)
+- Rows are namespaced per signed-in user, so two accounts on one device never see each other's data
+- Nothing in it is synced to iCloud or any server; sign-out clears it from memory, and "Clear All Data" deletes every row
+- Includes a one-call export of everything the app holds for a user
+
 ### 🏌️ Golf Bag Management
 - Store your complete club setup (driver, woods, hybrids, irons, wedges, putter)
 - Add detailed club information (brand, model, number, loft)
@@ -47,9 +67,16 @@ golf-coach-app/
 ├── babel.config.js                 # Babel configuration
 │
 ├── src/
+│   ├── data/
+│   │   └── courses.js             # Public course catalog (ships with the app)
+│   │
 │   ├── services/
 │   │   ├── auth.js                # Apple Sign In integration
 │   │   ├── storage.js             # Local + iCloud storage
+│   │   ├── db.js                  # Private per-user on-device database
+│   │   ├── rankings.js            # Bayesian course ranking
+│   │   ├── reviews.js             # Course ratings and reviews
+│   │   ├── teeTimes.js            # Tee sheets, pricing, bookings
 │   │   ├── ghin.js                # GHIN API integration
 │   │   ├── prompts.js             # Expert coaching prompts for each mode
 │   │   └── aiChat.js              # AI service (OpenAI/Anthropic)
@@ -57,8 +84,14 @@ golf-coach-app/
 │   ├── store/
 │   │   └── appStore.js            # Zustand state management
 │   │
+│   ├── components/
+│   │   ├── CourseDetail.js        # Course page: ranking, reviews, tee sheet
+│   │   └── StarRating.js          # Star display + star input
+│   │
 │   └── screens/
 │       ├── LoginScreen.js         # Apple authentication
+│       ├── CoursesScreen.js       # Ranked, searchable course list
+│       ├── TeeTimesScreen.js      # Upcoming and past bookings
 │       ├── GolfBagScreen.js       # Bag management
 │       ├── ChatScreen.js          # AI coach chat with modes
 │       ├── StatsScreen.js         # GHIN stats & variance
