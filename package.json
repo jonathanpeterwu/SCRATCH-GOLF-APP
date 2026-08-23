@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "~3.1.1",
-    "@expo/vector-icons": "^15.1.1",
+    "@expo/vector-icons": "~14.0.4",
     "@expo/webpack-config": "~19.0.1",
     "@react-native-async-storage/async-storage": "1.21.0",
     "@react-native-community/datetimepicker": "7.6.1",
@@ -21,6 +21,7 @@
     "axios": "^1.6.2",
     "expo": "~50.0.0",
     "expo-apple-authentication": "~6.3.0",
+    "expo-font": "~11.10.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.73.0",
