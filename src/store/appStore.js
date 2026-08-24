@@ -42,9 +42,13 @@ export const useAppStore = create((set) => ({
   // screens can render synchronously. The db stays the source of truth.
   reviews: [],
   bookings: [],
-  setCourseData: ({ reviews, bookings }) => set({
+  playLog: [],
+  profileSettings: null,
+  setCourseData: ({ reviews, bookings, playLog, profileSettings }) => set({
     reviews: reviews ?? [],
     bookings: bookings ?? [],
+    playLog: playLog ?? [],
+    profileSettings: profileSettings ?? null,
   }),
   upsertReview: (review) => set((state) => ({
     reviews: [
@@ -59,7 +63,12 @@ export const useAppStore = create((set) => ({
   replaceBooking: (booking) => set((state) => ({
     bookings: state.bookings.map((existing) => (existing.id === booking.id ? booking : existing)),
   })),
-  clearCourseData: () => set({ reviews: [], bookings: [] }),
+  addPlayLogEntry: (round) => set((state) => ({ playLog: [...state.playLog, round] })),
+  removePlayLogEntry: (roundId) => set((state) => ({
+    playLog: state.playLog.filter((round) => round.id !== roundId),
+  })),
+  setProfileSettings: (profileSettings) => set({ profileSettings }),
+  clearCourseData: () => set({ reviews: [], bookings: [], playLog: [], profileSettings: null }),
 
   // Theme
   isDarkMode: false,
@@ -68,6 +77,7 @@ export const useAppStore = create((set) => ({
 
   // Chat history
   chatHistory: [],
+  setChatHistory: (chatHistory) => set({ chatHistory: chatHistory ?? [] }),
   addMessage: (message) => set((state) => ({
     chatHistory: [...state.chatHistory, message]
   })),

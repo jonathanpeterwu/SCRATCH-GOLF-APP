@@ -8,6 +8,8 @@ import { loadFromStorage } from './src/services/storage';
 import { openDb } from './src/services/db';
 import { getReviews } from './src/services/reviews';
 import { getBookings } from './src/services/teeTimes';
+import { getPlayLog } from './src/services/playLog';
+import { getProfileSettings } from './src/services/gameProfile';
 import { useTheme } from './src/theme';
 
 // Screens
@@ -22,7 +24,8 @@ import ProfileScreen from './src/screens/ProfileScreen';
 const Tab = createBottomTabNavigator();
 
 export default function App() {
-  const { user, isDarkMode, setUser, setGolfBag, setGhinData, setDarkMode, setCourseData } = useAppStore();
+  const { user, isDarkMode, setUser, setGolfBag, setGhinData, setDarkMode, setCourseData,
+    setChatHistory } = useAppStore();
   const systemColorScheme = useColorScheme();
   const theme = useTheme();
 
@@ -31,6 +34,7 @@ export default function App() {
       if (data.user) setUser(data.user);
       if (data.golfBag) setGolfBag(data.golfBag);
       if (data.ghinData) setGhinData(data.ghinData);
+      if (data.chatHistory) setChatHistory(data.chatHistory);
     });
 
     // Default to system preference
@@ -48,8 +52,13 @@ export default function App() {
     (async () => {
       try {
         await openDb(user.id);
-        const [reviews, bookings] = await Promise.all([getReviews(user.id), getBookings(user.id)]);
-        if (!cancelled) setCourseData({ reviews, bookings });
+        const [reviews, bookings, playLog, profileSettings] = await Promise.all([
+          getReviews(user.id),
+          getBookings(user.id),
+          getPlayLog(user.id),
+          getProfileSettings(user.id),
+        ]);
+        if (!cancelled) setCourseData({ reviews, bookings, playLog, profileSettings });
       } catch (error) {
         console.error('Error opening course database:', error);
       }
