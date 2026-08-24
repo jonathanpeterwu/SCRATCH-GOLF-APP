@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'rea
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppStore } from '../store/appStore';
 import { useTheme, shadows, typography, spacing } from '../theme';
-import { getCourseById } from '../data/courses';
+import { getCourseById, formatFee } from '../data/courses';
 import {
   BOOKING_STATUS,
   cancelBooking,
@@ -137,7 +137,8 @@ function BookingCard({ booking, theme: t, onCancel }) {
         <Ionicons name="people-outline" size={16} color={t.textSecondary} />
         <Text style={[styles.detailText, { color: t.textSecondary }]}>
           {booking.players} {booking.players === 1 ? 'player' : 'players'}
-          {booking.cart ? ' • cart included' : ''} • ${booking.total}
+          {booking.cart ? ' • cart included' : ''} •{' '}
+          {formatFee(booking.total, course?.currency)}
         </Text>
       </View>
       {!!booking.notes && (

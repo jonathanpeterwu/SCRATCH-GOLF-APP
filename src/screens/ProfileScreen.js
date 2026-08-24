@@ -15,6 +15,7 @@ import { signOut } from '../services/auth';
 import { syncToCloud, clearAllStorage } from '../services/storage';
 import { clearUserData, closeDb } from '../services/db';
 import { isUpcoming } from '../services/teeTimes';
+import GameFocusCard from '../components/GameFocusCard';
 import { useTheme, shadows, typography, spacing } from '../theme';
 
 export default function ProfileScreen() {
@@ -148,6 +149,8 @@ export default function ProfileScreen() {
           theme={t}
         />
       </View>
+
+      <GameFocusCard />
 
       {/* Appearance */}
       <View style={styles.section}>

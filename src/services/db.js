@@ -22,6 +22,9 @@ const DB_VERSION = 'v1';
 export const TABLES = {
   REVIEWS: 'reviews',
   BOOKINGS: 'bookings',
+  PROFILE: 'profile', // single row: the golfer's declared focus and goal
+  PLAY_LOG: 'playLog', // courses played, with the traits they were played on
+  PREVIEWS: 'previews', // cached training briefs, keyed by course
 };
 
 const TABLE_NAMES = Object.values(TABLES);

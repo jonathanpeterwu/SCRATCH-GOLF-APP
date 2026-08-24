@@ -13,9 +13,14 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppStore } from '../store/appStore';
 import { useTheme, shadows, typography, spacing } from '../theme';
-import { getCourseById, COURSE_TYPE_LABELS } from '../data/courses';
+import { getCourseById, COURSE_TYPE_LABELS, formatFee } from '../data/courses';
 import { RATING_CATEGORIES, getCourseRanking, reviewOverall } from '../services/rankings';
 import { deleteReview, saveReview } from '../services/reviews';
+import { evaluateFit, explainFit } from '../services/courseFit';
+import { generatePreview, PREVIEW_SOURCES } from '../services/coursePreview';
+import { logRound } from '../services/playLog';
+import { useGameProfile } from '../hooks/useGameProfile';
+import TrainingBrief from './TrainingBrief';
 import {
   MAX_PLAYERS_PER_SLOT,
   bookableDates,
@@ -37,6 +42,10 @@ export default function CourseDetail({ courseId, onBack }) {
   const upsertReview = useAppStore((state) => state.upsertReview);
   const removeReview = useAppStore((state) => state.removeReview);
   const addBooking = useAppStore((state) => state.addBooking);
+  const golfBag = useAppStore((state) => state.golfBag);
+  const playLog = useAppStore((state) => state.playLog);
+  const addPlayLogEntry = useAppStore((state) => state.addPlayLogEntry);
+  const profile = useGameProfile();
 
   const [dateKey, setDateKey] = useState(todayKey());
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -45,6 +54,9 @@ export default function CourseDetail({ courseId, onBack }) {
   const [notes, setNotes] = useState('');
   const [booking, setBooking] = useState(false);
 
+  const [preview, setPreview] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
   const [rateVisible, setRateVisible] = useState(false);
   const [ratings, setRatings] = useState(emptyRatings());
   const [comment, setComment] = useState('');
@@ -52,7 +64,18 @@ export default function CourseDetail({ courseId, onBack }) {
 
   const course = getCourseById(courseId);
   const dates = useMemo(() => bookableDates(), []);
-  const ranking = useMemo(() => getCourseRanking(courseId, reviews), [courseId, reviews]);
+  const ranking = useMemo(
+    () => getCourseRanking(courseId, reviews, profile),
+    [courseId, reviews, profile]
+  );
+  const fit = useMemo(
+    () => (course ? evaluateFit(course, profile) : null),
+    [course, profile]
+  );
+  const roundsHere = useMemo(
+    () => playLog.filter((round) => round.courseId === courseId),
+    [playLog, courseId]
+  );
   const courseReviews = useMemo(
     () => reviews.filter((review) => review.courseId === courseId),
     [reviews, courseId]
@@ -104,7 +127,7 @@ export default function CourseDetail({ courseId, onBack }) {
       Alert.alert(
         'Tee time booked',
         `${course.name}\n${formatDateLabel(saved.date)} at ${saved.teeTime}\n` +
-          `${saved.players} ${saved.players === 1 ? 'player' : 'players'} • $${saved.total}\n\n` +
+          `${saved.players} ${saved.players === 1 ? 'player' : 'players'} • ${formatFee(saved.total, course.currency)}\n\n` +
           `Confirmation ${saved.confirmationCode}`
       );
     } catch (error) {
@@ -118,6 +141,36 @@ export default function CourseDetail({ courseId, onBack }) {
     setRatings(myReview ? { ...emptyRatings(), ...myReview.ratings } : emptyRatings());
     setComment(myReview?.comment || '');
     setRateVisible(true);
+  };
+
+  const runTrainingAgent = async (force = false) => {
+    if (previewLoading) return;
+    setPreviewLoading(true);
+    try {
+      const row = await generatePreview({
+        course,
+        profile,
+        golfBag,
+        userId: user?.id,
+        force,
+      });
+      setPreview(row.brief);
+    } catch (error) {
+      Alert.alert('Could not build the brief', error.message);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleLogRound = async () => {
+    try {
+      const round = await logRound({ courseId, userId: user?.id });
+      addPlayLogEntry(round);
+      // A new round can change links experience, which changes the brief.
+      setPreview(null);
+    } catch (error) {
+      Alert.alert('Could not log the round', error.message);
+    }
   };
 
   const confirmRemoveReview = () => {
@@ -179,8 +232,8 @@ export default function CourseDetail({ courseId, onBack }) {
           </View>
           <Text style={[styles.title, { color: t.text }]}>{course.name}</Text>
           <Text style={[styles.subtitle, { color: t.textSecondary }]}>
-            {course.city}, {course.state} • {COURSE_TYPE_LABELS[course.type]} • {course.designer},{' '}
-            {course.yearOpened}
+            {course.city}, {course.state || course.country} • {COURSE_TYPE_LABELS[course.type]} •{' '}
+            {course.designer}, {course.yearOpened}
           </Text>
           <View style={styles.headerRating}>
             <StarDisplay value={stats.userAverage ?? stats.rankedScore} size={16} />
@@ -201,6 +254,67 @@ export default function CourseDetail({ courseId, onBack }) {
             ))}
           </View>
         </View>
+
+        {/* Fit for the golfer's game */}
+        <Section
+          title="Against your game"
+          theme={t}
+          action={
+            <TouchableOpacity onPress={handleLogRound} activeOpacity={0.7}>
+              <Text style={[styles.actionText, { color: t.primary }]}>
+                {roundsHere.length > 0
+                  ? `Played ${roundsHere.length}x · log another`
+                  : "I've played here"}
+              </Text>
+            </TouchableOpacity>
+          }
+        >
+          <Text style={[styles.fitVerdict, { color: t.text }]}>
+            {fit.verdict.label} — {explainFit(course, profile, fit)}
+          </Text>
+          {fit.gaps.map((gap) => (
+            <DemandRow key={gap.key} gap={gap} theme={t} />
+          ))}
+          <Text style={[styles.noteText, { color: t.textTertiary, marginTop: spacing.sm }]}>
+            Bars show what the course demands; the marker is where your game sits.
+            {profile.hasRoundData
+              ? ` Built from ${profile.roundsAnalyzed} logged rounds.`
+              : ' Add GHIN rounds in Stats for a sharper read.'}
+          </Text>
+        </Section>
+
+        {/* AI training brief */}
+        <Section
+          title="Training brief"
+          theme={t}
+          action={
+            <TouchableOpacity
+              onPress={() => runTrainingAgent(Boolean(preview))}
+              activeOpacity={0.7}
+              disabled={previewLoading}
+            >
+              <Text style={[styles.actionText, { color: t.primary }]}>
+                {previewLoading ? 'Working…' : preview ? 'Rebuild' : 'Build my brief'}
+              </Text>
+            </TouchableOpacity>
+          }
+        >
+          {previewLoading && !preview ? (
+            <View style={styles.briefLoading}>
+              <ActivityIndicator color={t.primary} />
+              <Text style={[styles.noteText, { color: t.textSecondary }]}>
+                Matching this course against your game…
+              </Text>
+            </View>
+          ) : preview ? (
+            <TrainingBrief brief={preview} showHeadline={false} />
+          ) : (
+            <Text style={[styles.noteText, { color: t.textSecondary }]}>
+              Build a preparation brief for this course: what it asks of you, where your game is
+              exposed, drills to do before the trip, and how to play it on the day.
+            </Text>
+          )}
+        </Section>
 
         {/* Scorecard */}
         <Section title="Scorecard" theme={t}>
@@ -335,6 +449,7 @@ export default function CourseDetail({ courseId, onBack }) {
                   key={slot.id}
                   slot={slot}
                   theme={t}
+                  currency={course.currency}
                   onPress={() => openBooking(slot)}
                 />
               ))
@@ -404,7 +519,7 @@ export default function CourseDetail({ courseId, onBack }) {
                       color={wantsCart ? t.primary : t.textTertiary}
                     />
                     <Text style={[styles.cartText, { color: t.text }]}>
-                      Add cart (${selectedSlot.cartFee} per player)
+                      Add cart ({formatFee(selectedSlot.cartFee, course.currency)} per player)
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -427,10 +542,12 @@ export default function CourseDetail({ courseId, onBack }) {
 
                 <View style={[styles.totalRow, { borderTopColor: t.borderLight }]}>
                   <Text style={[styles.totalLabel, { color: t.textSecondary }]}>
-                    ${selectedSlot.pricePerPlayer} x {players}
+                    {formatFee(selectedSlot.pricePerPlayer, course.currency)} x {players}
                     {wantsCart ? ` + cart` : ''}
                   </Text>
-                  <Text style={[styles.totalValue, { color: t.text }]}>${bookingTotal}</Text>
+                  <Text style={[styles.totalValue, { color: t.text }]}>
+                    {formatFee(bookingTotal, course.currency)}
+                  </Text>
                 </View>
 
                 <View style={styles.modalButtons}>
@@ -539,7 +656,41 @@ export default function CourseDetail({ courseId, onBack }) {
   );
 }
 
-function TeeTimeRow({ slot, theme: t, onPress }) {
+/**
+ * One skill: how much the course demands it (the bar) against where the golfer
+ * currently sits (the marker). A marker to the left of the bar's end is a gap.
+ */
+function DemandRow({ gap, theme: t }) {
+  const short = gap.gap > 10;
+  return (
+    <View style={styles.demandRow}>
+      <Text
+        style={[
+          styles.demandLabel,
+          { color: gap.isFocus ? t.primary : t.textSecondary, fontWeight: gap.isFocus ? '700' : '400' },
+        ]}
+        numberOfLines={1}
+      >
+        {gap.label}
+        {gap.isFocus ? ' ★' : ''}
+      </Text>
+      <View style={[styles.demandTrack, { backgroundColor: t.surfaceAlt }]}>
+        <View
+          style={[
+            styles.demandFill,
+            { width: `${gap.demand}%`, backgroundColor: short ? t.warning : t.primary },
+          ]}
+        />
+        <View style={[styles.demandMarker, { left: `${gap.skill}%`, backgroundColor: t.text }]} />
+      </View>
+      <Text style={[styles.demandValue, { color: short ? t.warning : t.textTertiary }]}>
+        {gap.gap > 0 ? `+${Math.round(gap.gap)}` : Math.round(gap.gap)}
+      </Text>
+    </View>
+  );
+}
+
+function TeeTimeRow({ slot, theme: t, onPress, currency = 'USD' }) {
   const soldOut = slot.spotsAvailable === 0;
   return (
     <TouchableOpacity
@@ -564,7 +715,9 @@ function TeeTimeRow({ slot, theme: t, onPress }) {
           {slot.myBooking ? ' • booked' : ''}
         </Text>
       </View>
-      <Text style={[styles.teePrice, { color: t.primary }]}>${slot.pricePerPlayer}</Text>
+      <Text style={[styles.teePrice, { color: t.primary }]}>
+        {formatFee(slot.pricePerPlayer, currency)}
+      </Text>
       {!soldOut && <Ionicons name="chevron-forward" size={18} color={t.textTertiary} />}
     </TouchableOpacity>
   );
@@ -634,6 +787,19 @@ const styles = StyleSheet.create({
   barTrack: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
   barFill: { height: 8, borderRadius: 4 },
   categoryValue: { ...typography.bodySmall, fontWeight: '600', width: 28, textAlign: 'right' },
+  fitVerdict: { ...typography.bodySmall, marginBottom: spacing.md, lineHeight: 20 },
+  demandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+  demandLabel: { ...typography.caption, width: 116 },
+  demandTrack: { flex: 1, height: 10, borderRadius: 5, justifyContent: 'center' },
+  demandFill: { height: 10, borderRadius: 5 },
+  demandMarker: {
+    position: 'absolute',
+    width: 2,
+    height: 16,
+    borderRadius: 1,
+  },
+  demandValue: { ...typography.caption, fontWeight: '700', width: 30, textAlign: 'right' },
+  briefLoading: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
   review: { borderTopWidth: 1, paddingTop: spacing.sm, marginTop: spacing.sm },
   reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   reviewDate: { ...typography.caption },

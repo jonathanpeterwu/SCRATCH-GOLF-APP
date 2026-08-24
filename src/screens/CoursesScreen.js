@@ -11,8 +11,15 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppStore } from '../store/appStore';
 import { useTheme, shadows, typography, spacing } from '../theme';
-import { COURSE_TYPES, COURSE_TYPE_LABELS } from '../data/courses';
+import {
+  COURSE_TYPES,
+  COURSE_TYPE_LABELS,
+  DESTINATIONS,
+  formatFee,
+} from '../data/courses';
 import { rankCourses, SORT_OPTIONS } from '../services/rankings';
+import { describeProfile } from '../services/gameProfile';
+import { useGameProfile } from '../hooks/useGameProfile';
 import { StarDisplay } from '../components/StarRating';
 import CourseDetail from '../components/CourseDetail';
 
@@ -21,24 +28,38 @@ const TYPE_FILTERS = [
   COURSE_TYPES.MUNICIPAL,
   COURSE_TYPES.RESORT,
   COURSE_TYPES.SEMI_PRIVATE,
+  COURSE_TYPES.VISITOR,
 ];
 
 export default function CoursesScreen() {
   const reviews = useAppStore((state) => state.reviews);
+  const playLog = useAppStore((state) => state.playLog);
   const [query, setQuery] = useState('');
   const [types, setTypes] = useState([]);
+  const [destinations, setDestinations] = useState([]);
   const [sort, setSort] = useState('rank');
   const [selectedCourseId, setSelectedCourseId] = useState(null);
   const t = useTheme();
+  const profile = useGameProfile();
 
   const ranked = useMemo(
-    () => rankCourses(reviews, { query, types, sort }),
-    [reviews, query, types, sort]
+    () => rankCourses(reviews, { query, types, destinations, sort, profile }),
+    [reviews, query, types, destinations, sort, profile]
+  );
+
+  const playedIds = useMemo(
+    () => new Set(playLog.map((round) => round.courseId)),
+    [playLog]
   );
 
   const toggleType = (type) =>
     setTypes((current) =>
       current.includes(type) ? current.filter((item) => item !== type) : [...current, type]
+    );
+
+  const toggleDestination = (key) =>
+    setDestinations((current) =>
+      current.includes(key) ? current.filter((item) => item !== key) : [...current, key]
     );
 
   if (selectedCourseId) {
@@ -71,6 +92,24 @@ export default function CoursesScreen() {
           )}
         </View>
       </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterStrip}
+        contentContainerStyle={styles.filterStripContent}
+      >
+        <Text style={[styles.sortLabel, { color: t.textTertiary }]}>Trip</Text>
+        {DESTINATIONS.map(({ key, label }) => (
+          <Chip
+            key={key}
+            label={label}
+            active={destinations.includes(key)}
+            onPress={() => toggleDestination(key)}
+            theme={t}
+          />
+        ))}
+      </ScrollView>
 
       <ScrollView
         horizontal
@@ -116,9 +155,14 @@ export default function CoursesScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
-          <Text style={[styles.resultCount, { color: t.textSecondary }]}>
-            {ranked.length} {ranked.length === 1 ? 'course' : 'courses'} you can book
-          </Text>
+          <View style={styles.listHeader}>
+            <Text style={[styles.resultCount, { color: t.textSecondary }]}>
+              {ranked.length} {ranked.length === 1 ? 'course' : 'courses'} you can book
+            </Text>
+            <Text style={[styles.profileLine, { color: t.textTertiary }]}>
+              Ranked for you • {describeProfile(profile)}
+            </Text>
+          </View>
         }
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -132,6 +176,7 @@ export default function CoursesScreen() {
           <CourseCard
             entry={item}
             theme={t}
+            played={playedIds.has(item.course.id)}
             onPress={() => setSelectedCourseId(item.course.id)}
           />
         )}
@@ -158,8 +203,11 @@ function Chip({ label, active, onPress, theme: t }) {
   );
 }
 
-function CourseCard({ entry, theme: t, onPress }) {
-  const { course, stats, rank } = entry;
+function CourseCard({ entry, theme: t, onPress, played }) {
+  const { course, stats, rank, fit } = entry;
+  const toneColor = fit
+    ? { good: t.success, warn: t.warning, neutral: t.textSecondary }[fit.verdict.tone]
+    : t.textSecondary;
 
   return (
     <TouchableOpacity
@@ -176,11 +224,29 @@ function CourseCard({ entry, theme: t, onPress }) {
             {course.name}
           </Text>
           <Text style={[styles.courseLocation, { color: t.textSecondary }]}>
-            {course.city}, {course.state} • {COURSE_TYPE_LABELS[course.type]}
+            {course.city}, {course.state || course.country} • {COURSE_TYPE_LABELS[course.type]}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={20} color={t.textTertiary} />
+        {played ? (
+          <View style={[styles.playedPill, { backgroundColor: t.primaryLight }]}>
+            <Ionicons name="checkmark" size={12} color={t.primary} />
+            <Text style={[styles.playedText, { color: t.primary }]}>Played</Text>
+          </View>
+        ) : (
+          <Ionicons name="chevron-forward" size={20} color={t.textTertiary} />
+        )}
       </View>
+
+      {fit && (
+        <View style={styles.fitRow}>
+          <View style={[styles.verdictPill, { borderColor: toneColor }]}>
+            <Text style={[styles.verdictText, { color: toneColor }]}>{fit.verdict.label}</Text>
+          </View>
+          <Text style={[styles.fitNumbers, { color: t.textTertiary }]}>
+            Training {fit.training} • Fit {fit.comfort}
+          </Text>
+        </View>
+      )}
 
       <View style={styles.ratingRow}>
         <StarDisplay value={stats.userAverage ?? stats.rankedScore} size={14} />
@@ -197,7 +263,12 @@ function CourseCard({ entry, theme: t, onPress }) {
         <Stat label="Par" value={course.par} theme={t} />
         <Stat label="Yards" value={course.yardage.toLocaleString()} theme={t} />
         <Stat label="Slope" value={course.slopeRating} theme={t} />
-        <Stat label="From" value={`$${course.teeSheet.weekdayFee}`} theme={t} highlight />
+        <Stat
+          label="From"
+          value={formatFee(course.teeSheet.weekdayFee, course.currency)}
+          theme={t}
+          highlight
+        />
       </View>
     </TouchableOpacity>
   );
@@ -248,7 +319,32 @@ const styles = StyleSheet.create({
   },
   chipText: { ...typography.bodySmall, fontWeight: '600' },
   listContent: { padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.md },
-  resultCount: { ...typography.bodySmall, marginBottom: spacing.xs },
+  listHeader: { marginBottom: spacing.xs },
+  resultCount: { ...typography.bodySmall },
+  profileLine: { ...typography.caption, marginTop: 2 },
+  playedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  playedText: { ...typography.caption, fontWeight: '700' },
+  fitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  verdictPill: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+  },
+  verdictText: { ...typography.caption, fontWeight: '700' },
+  fitNumbers: { ...typography.caption },
   card: { borderRadius: 12, borderWidth: 1, padding: spacing.md },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   rankBadge: {

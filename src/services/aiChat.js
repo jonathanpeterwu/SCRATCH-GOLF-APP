@@ -204,6 +204,66 @@ Actually a strength! Keep it up.
     return responses[this.currentMode] || responses[COACHING_MODES.GENERAL];
   }
 
+  // True when a real API key has been dropped in, so callers can fall back to
+  // locally computed output instead of throwing at the user.
+  isConfigured() {
+    try {
+      this.validateConfig();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * One-shot completion that does NOT touch the coaching conversation history.
+   * Used by the course training agent, which asks a self-contained question per
+   * course rather than holding a conversation.
+   */
+  async complete(systemPrompt, userPrompt, { maxTokens = 1200 } = {}) {
+    this.validateConfig();
+
+    if (AI_CONFIG.ACTIVE_PROVIDER === 'openai') {
+      const response = await axios.post(
+        AI_CONFIG.OPENAI.API_URL,
+        {
+          model: AI_CONFIG.OPENAI.MODEL,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.6,
+          max_tokens: maxTokens,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${AI_CONFIG.OPENAI.API_KEY}`,
+          },
+        }
+      );
+      return response.data.choices[0].message.content;
+    }
+
+    const response = await axios.post(
+      AI_CONFIG.ANTHROPIC.API_URL,
+      {
+        model: AI_CONFIG.ANTHROPIC.MODEL,
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': AI_CONFIG.ANTHROPIC.API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+      }
+    );
+    return response.data.content[0].text;
+  }
+
   // Validate API configuration
   validateConfig() {
     const provider = AI_CONFIG.ACTIVE_PROVIDER;

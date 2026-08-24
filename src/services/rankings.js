@@ -1,4 +1,5 @@
 import { COURSES, getCourseById } from '../data/courses';
+import { evaluateFit } from './courseFit';
 
 // Course ranking.
 //
@@ -71,6 +72,8 @@ export const scoreCourse = (course, reviews = []) => {
 
 export const SORT_OPTIONS = [
   { key: 'rank', label: 'Ranking' },
+  { key: 'training', label: 'Training value', needsProfile: true },
+  { key: 'fit', label: 'Fits my game', needsProfile: true },
   { key: 'rating', label: 'Golfer rating' },
   { key: 'price', label: 'Green fee' },
   { key: 'difficulty', label: 'Difficulty' },
@@ -79,6 +82,9 @@ export const SORT_OPTIONS = [
 
 const comparators = {
   rank: (a, b) => b.stats.rankedScore - a.stats.rankedScore,
+  // Fit sorts fall back to the ranking when no profile was supplied.
+  training: (a, b) => (b.fit?.training ?? 0) - (a.fit?.training ?? 0) || comparators.rank(a, b),
+  fit: (a, b) => (b.fit?.comfort ?? 0) - (a.fit?.comfort ?? 0) || comparators.rank(a, b),
   rating: (a, b) => {
     // Unrated courses sort last rather than pretending to be 0 stars.
     const aRating = a.stats.userAverage ?? -1;
@@ -95,7 +101,7 @@ const matchesQuery = (course, query) => {
   if (!query) return true;
   const needle = query.trim().toLowerCase();
   if (!needle) return true;
-  return [course.name, course.city, course.state, course.designer]
+  return [course.name, course.city, course.state, course.country, course.designer]
     .filter(Boolean)
     .some((field) => field.toLowerCase().includes(needle));
 };
@@ -107,10 +113,18 @@ const matchesQuery = (course, query) => {
  * badge even while the list is sorted by price.
  *
  * @param {Array} reviews every review in the private db
- * @param {{query?: string, types?: string[], maxFee?: number, sort?: string}} options
+ * @param {{query?: string, types?: string[], destinations?: string[], maxFee?: number,
+ *          sort?: string, profile?: object}} options
  */
 export const rankCourses = (reviews = [], options = {}) => {
-  const { query = '', types = [], maxFee = null, sort = 'rank' } = options;
+  const {
+    query = '',
+    types = [],
+    destinations = [],
+    maxFee = null,
+    sort = 'rank',
+    profile = null,
+  } = options;
 
   const reviewsByCourse = reviews.reduce((acc, review) => {
     if (!review?.courseId) return acc;
@@ -121,6 +135,7 @@ export const rankCourses = (reviews = [], options = {}) => {
   const scored = COURSES.map((course) => ({
     course,
     stats: scoreCourse(course, reviewsByCourse[course.id] || []),
+    fit: profile ? evaluateFit(course, profile) : null,
   }));
 
   const rankById = {};
@@ -131,6 +146,7 @@ export const rankCourses = (reviews = [], options = {}) => {
   const filtered = scored.filter(({ course }) => {
     if (!matchesQuery(course, query)) return false;
     if (types.length > 0 && !types.includes(course.type)) return false;
+    if (destinations.length > 0 && !destinations.includes(course.destination)) return false;
     if (maxFee !== null && course.teeSheet.weekdayFee > maxFee) return false;
     return true;
   });
@@ -142,10 +158,10 @@ export const rankCourses = (reviews = [], options = {}) => {
 };
 
 /** Ranking detail for a single course, including its position in the full list. */
-export const getCourseRanking = (courseId, reviews = []) => {
+export const getCourseRanking = (courseId, reviews = [], profile = null) => {
   const course = getCourseById(courseId);
   if (!course) return null;
-  const ranked = rankCourses(reviews);
+  const ranked = rankCourses(reviews, { profile });
   const entry = ranked.find((item) => item.course.id === courseId);
   return entry ? { ...entry, total: ranked.length } : null;
 };
