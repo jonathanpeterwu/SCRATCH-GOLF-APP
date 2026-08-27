@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      # The same command Vercel runs. It catches import errors and version
+      # mismatches that the logic tests cannot see - the expo-font/SDK 50
+      # mismatch that stopped the app booting showed up here first.
+      - name: Build web bundle
+        run: npx expo export:web
+        env:
+          CI: '1'
+
+      - name: Check the bundle actually came out
+        run: test -f web-build/index.html

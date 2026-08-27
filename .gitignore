@@ -19,3 +19,7 @@ web-build/
 web-build/
 assets/generate-favicon.js
 assets/favicon.svg
+
+# Local environment (never commit real keys)
+.env
+.env.local

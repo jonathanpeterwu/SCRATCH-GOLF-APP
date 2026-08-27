@@ -120,7 +120,11 @@ golf-coach-app/
 │       ├── StatsScreen.js         # GHIN stats & variance
 │       └── ProfileScreen.js       # Settings & sync
 │
+├── tests/                          # Logic suites, run with `npm test`
+├── .github/workflows/ci.yml        # Test + web build on every push and PR
+│
 ├── README.md                       # This file
+├── DEPLOY.md                       # Where this ships and how
 ├── AI_INTEGRATION_GUIDE.md        # AI setup instructions
 ├── IMPLEMENTATION_GUIDE.md        # Detailed setup guide
 └── COACHING_MODES_REFERENCE.md    # Quick reference for modes
