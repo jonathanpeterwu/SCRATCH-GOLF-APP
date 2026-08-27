@@ -2,19 +2,29 @@ import axios from 'axios';
 import { COACHING_MODES, SYSTEM_PROMPTS, buildContextPrompt } from './prompts';
 
 // AI Service Configuration
+//
+// Keys come from the environment so none has to be committed. Set them in a
+// local .env (see .env.example) for development.
+//
+// IMPORTANT: EXPO_PUBLIC_* values are inlined into the bundle at build time. On
+// web that bundle is downloadable by anyone, so a key set this way is public -
+// fine for a personal build on your own device, NOT safe for a deployed site.
+// The production answer is a serverless proxy that holds the key server-side;
+// see DEPLOY.md. Without any key the app still works: course training briefs
+// fall back to the locally computed version.
 const AI_CONFIG = {
   OPENAI: {
-    API_KEY: 'YOUR_OPENAI_API_KEY', // Replace with your OpenAI API key
-    MODEL: 'gpt-4-turbo-preview',
+    API_KEY: process.env.EXPO_PUBLIC_OPENAI_API_KEY || 'YOUR_OPENAI_API_KEY',
+    MODEL: process.env.EXPO_PUBLIC_OPENAI_MODEL || 'gpt-4-turbo-preview',
     API_URL: 'https://api.openai.com/v1/chat/completions',
   },
   ANTHROPIC: {
-    API_KEY: 'YOUR_ANTHROPIC_API_KEY', // Replace with your Anthropic API key
-    MODEL: 'claude-3-5-sonnet-20241022',
+    API_KEY: process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || 'YOUR_ANTHROPIC_API_KEY',
+    MODEL: process.env.EXPO_PUBLIC_ANTHROPIC_MODEL || 'claude-opus-5',
     API_URL: 'https://api.anthropic.com/v1/messages',
   },
   // Choose your AI provider
-  ACTIVE_PROVIDER: 'anthropic', // 'openai' or 'anthropic'
+  ACTIVE_PROVIDER: process.env.EXPO_PUBLIC_AI_PROVIDER || 'anthropic', // 'openai' or 'anthropic'
 };
 
 class AIChat {
