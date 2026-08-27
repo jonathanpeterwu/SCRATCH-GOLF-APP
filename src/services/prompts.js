@@ -82,6 +82,103 @@ Example analysis:
 Always reference the golfer's actual SG data when available.`,
 };
 
+// The course training agent. Deliberately NOT a COACHING_MODE: the Chat tab
+// renders one button per mode, and this is a one-shot brief about a single
+// course rather than a conversation.
+export const COURSE_PREVIEW_SYSTEM_PROMPT = `You are a tour caddie and travel coach who prepares golfers for specific courses they are about to play, often abroad.
+
+You are given a course profile (its demands scored 0-100), the golfer's game profile on the same scale, and the gaps between them. Your job is to turn that into a preparation brief the golfer can act on in the weeks before the trip.
+
+Structure every brief as:
+
+1. **What this course will ask of you** - 3 bullets, each naming a specific demand and how it differs from the golf they normally play
+2. **Where your game is exposed** - the 1-2 biggest gaps, stated plainly, with the score consequence
+3. **Prep plan** - 2-3 drills with rep counts and success criteria, aimed at the exposed areas, doable before the trip
+4. **On the day** - 3 strategy calls specific to this course (club off the tee, miss side, when to putt from off the green)
+5. **Bag notes** - anything missing or worth adding for these conditions, based on the clubs listed
+
+Rules:
+- Be concrete. "Practise low shots" is useless; "20 knockdown 7-irons at 70% with a ball two inches back" is not.
+- Ground everything in the numbers you are given. Do not invent strokes gained figures.
+- Links golf is a different game from parkland: ball on the ground, wind as a club selection input, putting from 30 yards off the green. Say so when the course profile shows it.
+- Never guarantee a score. Give a realistic range and what decides which end of it they land on.
+- Keep it under 400 words. A brief that is not read is not a brief.`;
+
+/**
+ * The user-side message for the course training agent: the course, the golfer,
+ * and the measured gaps between them. Everything here is computed locally in
+ * services/courseFit.js - the model interprets, it does not invent numbers.
+ */
+export const buildCoursePreviewPrompt = ({ course, profile, fit, golfBag, expectedScore }) => {
+  const line = [];
+
+  line.push('=== COURSE ===');
+  line.push(`${course.name} - ${course.city}, ${course.state || ''} ${course.country}`.trim());
+  line.push(`${course.holes} holes, par ${course.par}, ${course.yardage} yards`);
+  line.push(`Course rating ${course.courseRating}, slope ${course.slopeRating}`);
+  line.push(`Designer: ${course.designer} (${course.yearOpened})`);
+  line.push(`Character: ${course.blurb}`);
+  line.push(`Notable: ${course.highlights.join('; ')}`);
+  if (course.walkingOnly) line.push('Walking only - no carts.');
+
+  line.push('\nCourse demands (0-100, higher = tests it more):');
+  Object.entries(course.traits).forEach(([key, value]) => {
+    line.push(`  ${key}: ${value}`);
+  });
+
+  line.push('\n=== GOLFER ===');
+  line.push(`Handicap index: ${profile.handicapIndex ?? 'unknown'}`);
+  line.push(
+    profile.hasRoundData
+      ? `Based on ${profile.roundsAnalyzed} logged rounds.`
+      : 'No round data logged - skill estimates come from the handicap index alone.'
+  );
+  if (profile.strokesGained) {
+    line.push('Strokes gained per round vs scratch:');
+    Object.entries(profile.strokesGained).forEach(([key, value]) => {
+      line.push(`  ${key}: ${value}`);
+    });
+  }
+  line.push('Skill levels on the same 0-100 scale as the course demands:');
+  Object.entries(profile.skills).forEach(([key, value]) => {
+    line.push(`  ${key}: ${Math.round(value)}`);
+  });
+  line.push(`Working on: ${profile.focus.join(', ')}`);
+  if (profile.goal) line.push(`Stated goal: ${profile.goal}`);
+  line.push(
+    `Links/firm-ground experience: ${profile.linksExperience}/100 (from rounds logged in the app)`
+  );
+
+  line.push('\n=== COMPUTED GAPS (course demand minus golfer skill) ===');
+  fit.gaps.forEach((gap) => {
+    line.push(
+      `  ${gap.label}: demand ${gap.demand}, skill ${Math.round(gap.skill)}, gap ${gap.gap > 0 ? '+' : ''}${Math.round(gap.gap)}${gap.isFocus ? ' [FOCUS AREA]' : ''}`
+    );
+  });
+  line.push(`Comfort score: ${fit.comfort}/100. Training value: ${fit.training}/100.`);
+  line.push(
+    `Condition unfamiliarity: ${fit.exposure.unfamiliarity}/100 (wind ${fit.exposure.wind}, ground game ${fit.exposure.groundGame}).`
+  );
+  if (expectedScore) {
+    line.push(
+      `Locally computed expected score: ${expectedScore.low}-${expectedScore.high} (course handicap ${expectedScore.courseHandicap}).`
+    );
+  }
+
+  if (golfBag) {
+    line.push('\n=== BAG ===');
+    if (golfBag.driver) line.push(`Driver: ${golfBag.driver.brand} ${golfBag.driver.model} ${golfBag.driver.loft || ''}`.trim());
+    if (golfBag.woods?.length) line.push(`Woods: ${golfBag.woods.map((w) => `${w.number}W`).join(', ')}`);
+    if (golfBag.hybrids?.length) line.push(`Hybrids: ${golfBag.hybrids.map((h) => `${h.number}H`).join(', ')}`);
+    if (golfBag.irons?.length) line.push(`Irons: ${golfBag.irons.map((i) => i.number).join(', ')}`);
+    if (golfBag.wedges?.length) line.push(`Wedges: ${golfBag.wedges.map((w) => `${w.loft}°`).join(', ')}`);
+    if (golfBag.putter) line.push(`Putter: ${golfBag.putter.brand} ${golfBag.putter.model}`);
+  }
+
+  line.push('\nWrite the preparation brief for this golfer at this course.');
+  return line.join('\n');
+};
+
 // Build context prompt from golfer's data
 export const buildContextPrompt = (user, golfBag, ghinData) => {
   let context = '\n\n=== GOLFER PROFILE ===\n';

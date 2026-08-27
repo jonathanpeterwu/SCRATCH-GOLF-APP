@@ -38,6 +38,38 @@ export const useAppStore = create((set) => ({
   ghinData: null,
   setGhinData: (ghinData) => set({ ghinData }),
 
+  // Courses: ratings and tee time bookings, mirrored from the private db so
+  // screens can render synchronously. The db stays the source of truth.
+  reviews: [],
+  bookings: [],
+  playLog: [],
+  profileSettings: null,
+  setCourseData: ({ reviews, bookings, playLog, profileSettings }) => set({
+    reviews: reviews ?? [],
+    bookings: bookings ?? [],
+    playLog: playLog ?? [],
+    profileSettings: profileSettings ?? null,
+  }),
+  upsertReview: (review) => set((state) => ({
+    reviews: [
+      ...state.reviews.filter((existing) => existing.id !== review.id),
+      review,
+    ],
+  })),
+  removeReview: (reviewId) => set((state) => ({
+    reviews: state.reviews.filter((review) => review.id !== reviewId),
+  })),
+  addBooking: (booking) => set((state) => ({ bookings: [...state.bookings, booking] })),
+  replaceBooking: (booking) => set((state) => ({
+    bookings: state.bookings.map((existing) => (existing.id === booking.id ? booking : existing)),
+  })),
+  addPlayLogEntry: (round) => set((state) => ({ playLog: [...state.playLog, round] })),
+  removePlayLogEntry: (roundId) => set((state) => ({
+    playLog: state.playLog.filter((round) => round.id !== roundId),
+  })),
+  setProfileSettings: (profileSettings) => set({ profileSettings }),
+  clearCourseData: () => set({ reviews: [], bookings: [], playLog: [], profileSettings: null }),
+
   // Theme
   isDarkMode: false,
   toggleTheme: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
@@ -45,6 +77,7 @@ export const useAppStore = create((set) => ({
 
   // Chat history
   chatHistory: [],
+  setChatHistory: (chatHistory) => set({ chatHistory: chatHistory ?? [] }),
   addMessage: (message) => set((state) => ({
     chatHistory: [...state.chatHistory, message]
   })),

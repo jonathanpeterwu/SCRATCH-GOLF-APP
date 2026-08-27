@@ -12,6 +12,17 @@ const STORAGE_KEYS = {
   CHAT_HISTORY: '@golf_coach_chat',
 };
 
+// loadFromStorage() returns data under these names. They have to match what the
+// app actually reads: lowercasing the storage key gave 'golf_bag' and
+// 'ghin_data', which no caller ever looked for, so the bag and GHIN data were
+// written on every change and silently never restored.
+const RESULT_KEYS = {
+  USER: 'user',
+  GOLF_BAG: 'golfBag',
+  GHIN_DATA: 'ghinData',
+  CHAT_HISTORY: 'chatHistory',
+};
+
 // Save data locally and to iCloud (when available)
 export const saveToStorage = async (key, data) => {
   try {
@@ -61,7 +72,7 @@ export const loadFromStorage = async () => {
         }
 
         if (jsonValue) {
-          data[key.toLowerCase()] = JSON.parse(jsonValue);
+          data[RESULT_KEYS[key]] = JSON.parse(jsonValue);
         }
       } catch (error) {
         console.warn(`Error loading ${key}:`, error);

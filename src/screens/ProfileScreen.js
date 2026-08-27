@@ -13,11 +13,14 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppStore } from '../store/appStore';
 import { signOut } from '../services/auth';
 import { syncToCloud, clearAllStorage } from '../services/storage';
+import { clearUserData, closeDb } from '../services/db';
+import { isUpcoming } from '../services/teeTimes';
+import GameFocusCard from '../components/GameFocusCard';
 import { useTheme, shadows, typography, spacing } from '../theme';
 
 export default function ProfileScreen() {
-  const { user, golfBag, ghinData, isDarkMode, toggleTheme,
-    setUser, setGolfBag, setGhinData, clearChat } = useAppStore();
+  const { user, golfBag, ghinData, isDarkMode, toggleTheme, reviews, bookings,
+    setUser, setGolfBag, setGhinData, clearChat, clearCourseData } = useAppStore();
   const [isSyncing, setIsSyncing] = useState(false);
   const t = useTheme();
 
@@ -39,7 +42,14 @@ export default function ProfileScreen() {
       {
         text: 'Sign Out', style: 'destructive',
         onPress: async () => {
-          try { await signOut(); setUser(null); }
+          try {
+            await signOut();
+            // Course ratings and bookings stay on disk for the next sign in;
+            // just drop them out of memory.
+            closeDb();
+            clearCourseData();
+            setUser(null);
+          }
           catch (error) { Alert.alert('Error', 'Failed to sign out.'); }
         },
       },
@@ -53,17 +63,24 @@ export default function ProfileScreen() {
         text: 'Clear Data', style: 'destructive',
         onPress: async () => {
           try {
+            // Wipe the private course database first so its in-memory cache goes
+            // with it, then everything else.
+            if (user?.id) await clearUserData(user.id);
+            closeDb();
             await clearAllStorage();
             setUser(null);
             setGolfBag({ driver: null, woods: [], hybrids: [], irons: [], wedges: [], putter: null });
             setGhinData(null);
             clearChat();
+            clearCourseData();
             Alert.alert('Success', 'All data cleared');
           } catch (error) { Alert.alert('Error', 'Failed to clear data.'); }
         },
       },
     ]);
   };
+
+  const upcomingTeeTimes = (bookings || []).filter(isUpcoming).length;
 
   const getClubCount = () => {
     if (!golfBag) return 0;
@@ -114,6 +131,26 @@ export default function ProfileScreen() {
           theme={t}
         />
       </View>
+
+      {/* Courses */}
+      <View style={styles.statsContainer}>
+        <StatCard
+          IconComponent={Ionicons}
+          iconName="star"
+          value={reviews?.length || 0}
+          label="Courses Rated"
+          theme={t}
+        />
+        <StatCard
+          IconComponent={Ionicons}
+          iconName="calendar"
+          value={upcomingTeeTimes}
+          label="Tee Times Booked"
+          theme={t}
+        />
+      </View>
+
+      <GameFocusCard />
 
       {/* Appearance */}
       <View style={styles.section}>

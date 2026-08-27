@@ -4,6 +4,40 @@ A comprehensive React Native golf coaching app with AI-powered advice, iCloud sy
 
 ## 🎯 Features
 
+### ⛳ Course Rankings
+- Ranked catalog of publicly bookable courses across Pinehurst, Scotland, England, and the US - municipals, daily-fee tracks, resorts, and members' clubs that sell visitor times
+- Filter by trip destination, search by course, city, country, or architect; sort by ranking, training value, fit, golfer rating, green fee, or difficulty
+- Rate a course across five categories (conditions, layout, value, pace, facilities) and leave a review
+- Rankings use a Bayesian (shrunk) average, so one glowing review can't push a course to #1 - but a run of them moves it
+- UK green fees are shown in pounds, US fees in dollars
+
+### 🎯 Ranked Around Your Game
+- Every course carries a `traits` block: how hard it leans on driving, approach, around-the-green, and putting, plus wind, ground game, and how penal a miss is - all on 0-100
+- Your game profile lives on the same scale, built from GHIN strokes gained (or your handicap alone if you have no rounds logged), so a course demand and your skill compare directly
+- **Training value** ranks courses by how hard they test what you're working on. **Fit** ranks them by how well they suit the game you have today. They deliberately disagree
+- Set your focus in Profile → Game Focus, or leave it and it follows your two weakest strokes gained categories
+- Log rounds you've played; links and heathland rounds build a links-experience score that changes how a Scotland trip reads
+
+### 🤖 AI Training Agent
+- Builds a preparation brief per course: what it will ask of you, where your game is exposed, drills to do before the trip, how to play it on the day, and bag notes based on the clubs you actually carry
+- Every brief is computed locally first - the gaps, the drills, the expected score band (WHS course handicap adjusted for fit) all come from your numbers and the course's traits, and work with no API key and no network
+- With an AI provider configured in `aiChat.js`, the same computed numbers are handed to the model, which writes the prose version above them. The model interprets; it never invents the figures
+- Briefs are cached in the private database and rebuilt when your handicap, skills, focus, or links experience change
+
+### 🗓️ Tee Time Booking
+- Every course publishes a tee sheet: real tee windows, intervals, and per-slot pricing with early-bird and twilight discounts
+- Live availability per slot (out of a foursome), with past times and full groups blocked
+- Book 1-4 players up to 14 days out, add a cart, leave a note for the pro shop, and get a confirmation code
+- Upcoming and past tee times in one place, with cancellation
+
+> **Note:** there is no live booking backend yet. Bookings are written to the private database on the device, and the "other golfers" filling up each sheet are derived deterministically from the course and date - the same slot always shows the same availability. Swapping in a real provider (GolfNow, Supreme Golf, a club's own API) means replacing the two functions in `src/services/teeTimes.js` that produce a sheet and confirm a booking; the screens and the private database stay as they are. Green fees and tee windows in `src/data/courses.js` are approximate - confirm with the course.
+
+### 🔒 Private On-Device Database
+- Ratings, reviews, and bookings live in a private database on the device (`src/services/db.js`)
+- Rows are namespaced per signed-in user, so two accounts on one device never see each other's data
+- Nothing in it is synced to iCloud or any server; sign-out clears it from memory, and "Clear All Data" deletes every row
+- Includes a one-call export of everything the app holds for a user
+
 ### 🏌️ Golf Bag Management
 - Store your complete club setup (driver, woods, hybrids, irons, wedges, putter)
 - Add detailed club information (brand, model, number, loft)
@@ -47,18 +81,40 @@ golf-coach-app/
 ├── babel.config.js                 # Babel configuration
 │
 ├── src/
+│   ├── data/
+│   │   └── courses.js             # Public course catalog + per-course demands
+│   │
 │   ├── services/
 │   │   ├── auth.js                # Apple Sign In integration
 │   │   ├── storage.js             # Local + iCloud storage
+│   │   ├── db.js                  # Private per-user on-device database
+│   │   ├── rankings.js            # Bayesian course ranking
+│   │   ├── reviews.js             # Course ratings and reviews
+│   │   ├── teeTimes.js            # Tee sheets, pricing, bookings
+│   │   ├── gameProfile.js         # Strokes gained -> skill profile + focus
+│   │   ├── courseFit.js           # Course demands vs your game
+│   │   ├── coursePreview.js       # The AI training agent
+│   │   ├── playLog.js             # Rounds played, links experience
 │   │   ├── ghin.js                # GHIN API integration
-│   │   ├── prompts.js             # Expert coaching prompts for each mode
+│   │   ├── prompts.js             # Coaching prompts + training-agent prompt
 │   │   └── aiChat.js              # AI service (OpenAI/Anthropic)
 │   │
 │   ├── store/
 │   │   └── appStore.js            # Zustand state management
 │   │
+│   ├── hooks/
+│   │   └── useGameProfile.js      # One shared game profile for every screen
+│   │
+│   ├── components/
+│   │   ├── CourseDetail.js        # Course page: fit, brief, reviews, tee sheet
+│   │   ├── TrainingBrief.js       # Renders a training brief
+│   │   ├── GameFocusCard.js       # What you're working on
+│   │   └── StarRating.js          # Star display + star input
+│   │
 │   └── screens/
 │       ├── LoginScreen.js         # Apple authentication
+│       ├── CoursesScreen.js       # Ranked, searchable course list
+│       ├── TeeTimesScreen.js      # Upcoming and past bookings
 │       ├── GolfBagScreen.js       # Bag management
 │       ├── ChatScreen.js          # AI coach chat with modes
 │       ├── StatsScreen.js         # GHIN stats & variance
