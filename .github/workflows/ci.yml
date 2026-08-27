@@ -1,9 +1,20 @@
 name: CI
 
 on:
+  # Only the mainline on push - a branch with an open PR is already covered by
+  # the pull_request trigger, and listing '**' here runs everything twice.
+  # Extra names so CI survives the default branch being renamed.
   push:
-    branches: ['**']
+    branches:
+      - claude/react-native-icloud-app-01NJvhKiXNUPgynF5KPV5qS1
+      - main
+      - master
   pull_request:
+
+# A new push supersedes the run in flight for the same ref.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -13,7 +24,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Matches the Node the suites are developed against.
+          node-version: '22'
           cache: npm
 
       - name: Install
